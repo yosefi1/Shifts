@@ -1,50 +1,109 @@
 import streamlit as st
+import streamlit_authenticator as stauth
 import pandas as pd
-from datetime import date
+import yaml
+from yaml.loader import SafeLoader
+from datetime import datetime
 
-FILENAME = "constraints.csv"
+# Load config
+with open('config.yaml') as file:
+    config = yaml.load(file, Loader=SafeLoader)
 
-st.set_page_config(page_title="ניהול אילוצים לשמירה", layout="centered")
+# Authenticator
+authenticator = stauth.Authenticate(
+    config['credentials'],
+    config['cookie']['name'],
+    config['cookie']['key'],
+    config['cookie']['expiry_days']
+)
 
-st.title("🛡️ הזנת אילוצים למשמרות")
+name, authentication_status, username = authenticator.login("התחברות", "main")
 
-# הזדהות פשוטה (שלב ראשון בלבד)
-name = st.text_input("הכנס את שמך")
+if authentication_status is False:
+    st.error("שם משתמש או סיסמה לא נכונים")
 
-# רק אם יש שם – מציגים טופס
-if name:
-    st.subheader("הזן אילוצים לשבוע הקרוב:")
+if authentication_status is None:
+    st.warning("אנא התחבר")
 
-    unavailable_days = st.multiselect(
-        "באילו ימים אינך יכול לעבוד?",
-        ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"]
-    )
+if authentication_status:
+    st.sidebar.success(f"שלום {name}")
+    authenticator.logout("התנתקות", "sidebar")
 
-    comment = st.text_area("הערות נוספות")
+    ROLE = config['credentials']['usernames'][username]['role']
+    FILENAME = "constraints.csv"
+    SHIFTS = ["בוקר", "צהריים", "ערב"]
+    DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"]
 
-    if st.button("שמור"):
-        new_entry = {
-            "שם": name,
-            "תאריך שליחה": date.today().isoformat(),
-            "ימים חסומים": ", ".join(unavailable_days),
-            "הערות": comment
-        }
+    st.title("🗓️ מערכת הזנת אילוצים לשיבוץ משמרות")
+
+    # עובד רגיל: הזנת אילוצים
+    if ROLE == "user":
+        st.header("הזנת אילוצים לשבוע הקרוב")
+        unavailable = []
+
+        st.markdown("בחר אילוצים (שבהם אינך יכול לעבוד):")
+        for day in DAYS:
+            cols = st.columns(len(SHIFTS))
+            for i, shift in enumerate(SHIFTS):
+                key = f"{day}_{shift}"
+                if cols[i].checkbox(f"{day} - {shift}", key=key):
+                    unavailable.append((day, shift))
+
+        comment = st.text_area("הערות נוספות")
+
+        if st.button("שמור אילוצים"):
+            entry = {
+                "משתמש": username,
+                "שם": name,
+                "תאריך שליחה": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "אילוצים": "; ".join([f"{d} ({s})" for d, s in unavailable]),
+                "הערות": comment
+            }
+
+            try:
+                df = pd.read_csv(FILENAME)
+            except FileNotFoundError:
+                df = pd.DataFrame(columns=entry.keys())
+
+            df = pd.concat([df, pd.DataFrame([entry])], ignore_index=True)
+            df.to_csv(FILENAME, index=False)
+            st.success("✅ האילוצים נשמרו בהצלחה!")
+
+    # מנהל: צפייה באילוצים של כולם
+    if ROLE == "admin":
+        st.header("👀 צפייה באילוצים של כלל העובדים")
 
         try:
             df = pd.read_csv(FILENAME)
+            st.dataframe(df)
         except FileNotFoundError:
-            df = pd.DataFrame(columns=new_entry.keys())
+            st.info("אין עדיין אילוצים במערכת.")
 
-        df = df.append(new_entry, ignore_index=True)
-        df.to_csv(FILENAME, index=False)
-        st.success("הבקשה נשמרה בהצלחה ✅")
+        st.markdown("---")
+        st.subheader("📆 תצוגת לוח שבועי")
 
-    # הצגת הנתונים (למנהל)
-    st.subheader("📋 כל האילוצים שהוזנו עד כה")
-    try:
-        df = pd.read_csv(FILENAME)
-        st.dataframe(df)
-    except:
-        st.info("עדיין לא הוזנו אילוצים.")
-else:
-    st.warning("נא להזין שם כדי להמשיך")
+        # טבלת אילוצים לפי ימים ומשמרות
+        table = pd.DataFrame(index=SHIFTS, columns=DAYS)
+
+        # בונה מילון של אילוצים
+        try:
+            constraints_df = pd.read_csv(FILENAME)
+            all_constraints = {}
+            for _, row in constraints_df.iterrows():
+                name = row["שם"]
+                items = row["אילוצים"].split("; ")
+                for item in items:
+                    if " (" in item:
+                        d, s = item.replace(")", "").split(" (")
+                        all_constraints.setdefault((d, s), []).append(name)
+        except:
+            all_constraints = {}
+
+        for day in DAYS:
+            for shift in SHIFTS:
+                key = (day, shift)
+                names = all_constraints.get(key, [])
+                table.at[shift, day] = ", ".join(names)
+
+        st.dataframe(table.fillna("—"))
+
