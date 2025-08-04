@@ -1,0 +1,16 @@
+credentials:
+  usernames:
+    manager1:
+      name: מנהל
+      password: pass123
+      role: admin
+    worker1:
+      name: עובד רגיל
+      password: pass456
+      role: user
+cookie:
+  expiry_days: 3
+  key: some_signature_key
+  name: some_cookie_name
+preauthorized:
+  emails: []
