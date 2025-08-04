@@ -1,11 +1,11 @@
 credentials:
   usernames:
     manager1:
-      name: מנהל
+      name: admin
       password: pass123
       role: admin
     worker1:
-      name: עובד רגיל
+      name: user
       password: pass456
       role: user
 cookie:
