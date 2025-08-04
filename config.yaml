@@ -2,11 +2,11 @@ credentials:
   usernames:
     manager1:
       name: admin
-      password: pass123
+      password: $2b$12$Q20uZzDq2aTUVgmVe2wW7OrScKRVnm3m2tbpjIxMvmkCTcHVzjHbS
       role: admin
     worker1:
       name: user
-      password: pass456
+      password: $2b$12$lqy29fUbENXClf53Ga4Wre0McyZstPFuHeayu.7xK2f.Lfw1PlMH6
       role: user
 cookie:
   expiry_days: 3
