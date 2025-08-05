@@ -47,9 +47,20 @@ else:
     """, unsafe_allow_html=True)
 
     # Tabs
-    tabs = st.tabs(["📅 צפייה בשיבוצים", "🚫 סימון אילוצים"])
-    with tabs[0]:
+    tabs = ["📅 צפייה בשיבוצים"]
+    if role != "admin":
+        tabs.append("🚫 סימון אילוצים")
+    if role == "admin":
+        tabs.append("👀 צפייה באילוצי עובדים")
+    
+    selected_tab = st.selectbox("בחר תצוגה", tabs)
+    
+    if selected_tab == "📅 צפייה בשיבוצים":
         show_schedule_tab(role)
-    with tabs[1]:
+    elif selected_tab == "🚫 סימון אילוצים":
         show_constraints_tab(username)
+    elif selected_tab == "👀 צפייה באילוצי עובדים":
+        show_admin_constraints_view()
+
+
 
