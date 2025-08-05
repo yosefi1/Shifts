@@ -6,6 +6,7 @@ from datetime import datetime
 import streamlit_authenticator as stauth
 import os
 import hashlib
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 
 # --- הגדרות ---
 SHIFT_TIMES = ["08:00-12:00", "12:00-20:00", "20:00-00:00"]
@@ -54,13 +55,6 @@ else:
     # --- עיצוב RTL ויישור ---
     st.markdown("""
         <style>
-        .row-widget.stSelectbox {
-            direction: rtl;
-            text-align: right;
-        }
-        .st-emotion-cache-1kyxreq {
-            direction: rtl;
-        }
         div[data-testid="stMarkdownContainer"] {
             direction: rtl;
             text-align: right;
@@ -72,50 +66,46 @@ else:
 
     role = config['credentials']['usernames'][username]['role']
     edited_schedule = schedule.copy()
-    used_keys = set()
 
-    # שורת כותרות
-    header_cols = st.columns(len(SHIFT_TIMES) * len(DAYS) + 1)
-    header_cols[0].markdown("**עמדה**")
-    for i, day in enumerate(DAYS):
-        for shift in SHIFT_TIMES:
-            idx = 1 + i * len(SHIFT_TIMES) + SHIFT_TIMES.index(shift)
-            header_cols[idx].markdown(f"**{day}<br>{shift}**", unsafe_allow_html=True)
-
-    # שורות של עמדות
+    # --- בניית DataFrame לטבלה ---
+    table_data = []
     for pos in positions_df['position']:
-        row_cols = st.columns(len(SHIFT_TIMES) * len(DAYS) + 1)
-        row_cols[0].markdown(f"**{pos}**")
-
-        col_idx = 1
+        row = {"עמדה": pos}
         for day in DAYS:
             for shift in SHIFT_TIMES:
-                full_index = f"{pos}__{day}__{shift}"
-                current = schedule.loc[full_index, 'name'] if full_index in schedule.index else ""
-                current_str = str(current).strip()
+                key = f"{day} {shift}"
+                index_key = f"{pos}__{day}__{shift}"
+                row[key] = schedule.loc[index_key, 'name'] if index_key in schedule.index else ""
+        table_data.append(row)
 
-                key_base = f"{pos}_{day}_{shift}"
-                key = hashlib.md5(key_base.encode()).hexdigest()[:10]
-                while key in used_keys:
-                    key_base += "_"
-                    key = hashlib.md5(key_base.encode()).hexdigest()[:10]
-                used_keys.add(key)
+    df = pd.DataFrame(table_data)
 
-                with row_cols[col_idx]:
-                    if role == 'admin':
-                        if pos in patrol_positions:
-                            male_workers = [w for w in workers if workers_gender.get(w) == 'זכר']
-                            index_val = male_workers.index(current_str) + 1 if current_str in male_workers else 0
-                            cell = st.selectbox("", [""] + male_workers, key=key, index=index_val, label_visibility="collapsed")
-                        else:
-                            index_val = workers.index(current_str) + 1 if current_str in workers else 0
-                            cell = st.selectbox("", [""] + workers, key=key, index=index_val, label_visibility="collapsed")
-                        edited_schedule.loc[full_index, 'name'] = cell
-                    else:
-                        st.markdown(f"{current_str if current_str else '-'}")
+    # --- הגדרות AGGRID ---
+    gb = GridOptionsBuilder.from_dataframe(df)
+    gb.configure_default_column(editable=(role == 'admin'), resizable=True, wrapText=True, autoHeight=True)
+    gb.configure_grid_options(domLayout='normal', suppressRowClickSelection=False)
+    gb.configure_columns(df.columns[1:], cellEditor='agSelectCellEditor', cellEditorParams={"values": workers})
+    grid_options = gb.build()
 
-                col_idx += 1
+    grid_response = AgGrid(
+        df,
+        gridOptions=grid_options,
+        update_mode=GridUpdateMode.VALUE_CHANGED,
+        fit_columns_on_grid_load=True,
+        enable_enterprise_modules=False,
+        height=600,
+        reload_data=False
+    )
+
+    updated_df = grid_response['data']
 
     if role == 'admin' and st.button("💾 שמור שיבוצים"):
+        for idx, row in updated_df.iterrows():
+            pos = row['עמדה']
+            for day in DAYS:
+                for shift in SHIFT_TIMES:
+                    col = f"{day} {shift}"
+                    index_key = f"{pos}__{day}__{shift}"
+                    edited_schedule.loc[index_key, 'name'] = row[col]
         edited_schedule.to_csv(SCHEDULE_FILE)
         st.success("השיבוצים נשמרו בהצלחה!")
