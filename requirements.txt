@@ -4,3 +4,4 @@ pyyaml
 streamlit-authenticator==0.2.2
 streamlit-aggrid
 streamlit-extras
+streamlit-component-template
