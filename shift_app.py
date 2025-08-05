@@ -114,19 +114,6 @@ else:
         else:
             gb.configure_column(col, cellEditor='agSelectCellEditor', cellEditorParams={"values": workers}, autoSize=True, wrapText=True)
 
-    # הפעלת קווים בין עמודות באמצעות הגדרה פנימית
-    gb.configure_grid_options(getRowStyle={
-        'styleConditions': [
-            {
-                'condition': 'true',
-                'style': {
-                    'borderBottom': '1px solid #ccc',
-                    'borderRight': '1px solid #ccc'
-                }
-            }
-        ]
-    })
-
     grid_options = gb.build()
 
     grid_response = AgGrid(
