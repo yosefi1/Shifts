@@ -1,15 +1,20 @@
 import streamlit as st
-import streamlit_authenticator as stauth
 import pandas as pd
 import yaml
 from yaml.loader import SafeLoader
 from datetime import datetime
+import streamlit_authenticator as stauth
+import os
 
-# Load config
+# --- הגדרות ---
+SHIFT_TIMES = ["08:00-12:00", "12:00-20:00", "20:00-00:00"]
+DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"]
+SCHEDULE_FILE = "schedule.csv"
+
+# --- טעינת קונפיג ---
 with open('config.yaml') as file:
     config = yaml.load(file, Loader=SafeLoader)
 
-# Authenticator
 authenticator = stauth.Authenticate(
     config['credentials'],
     config['cookie']['name'],
@@ -17,95 +22,64 @@ authenticator = stauth.Authenticate(
     config['cookie']['expiry_days']
 )
 
-name, authentication_status, username = authenticator.login("Login", "main")
+name, auth_status, username = authenticator.login("Login", "main")
 
-if authentication_status is False:
+if auth_status is False:
     st.error("שם משתמש או סיסמה לא נכונים")
-
-if authentication_status is None:
+elif auth_status is None:
     st.warning("אנא התחבר")
-
-if authentication_status:
+else:
+    authenticator.logout("Logout", "sidebar")
     st.sidebar.success(f"שלום {name}")
-    authenticator.logout("התנתקות", "sidebar")
 
-    ROLE = config['credentials']['usernames'][username]['role']
-    FILENAME = "constraints.csv"
-    SHIFTS = ["בוקר", "צהריים", "ערב"]
-    DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"]
+    # טען עובדים ועמדות
+    workers_df = pd.read_csv("workers.csv")
+    positions_df = pd.read_csv("positions.csv")
+    workers = workers_df['name'].tolist()
+    workers_gender = dict(zip(workers_df['name'], workers_df['gender']))
 
-    st.title("🗓️ מערכת הזנת אילוצים לשיבוץ משמרות")
+    # הגדרת עמדות סיור לזכרים בלבד
+    patrol_positions = ["סיור 10", "סיור 10א"]
 
-    # עובד רגיל: הזנת אילוצים
-    if ROLE == "user":
-        st.header("הזנת אילוצים לשבוע הקרוב")
-        unavailable = []
+    # טען או צור טבלת שיבוצים
+    if os.path.exists(SCHEDULE_FILE):
+        schedule = pd.read_csv(SCHEDULE_FILE, index_col=0)
+    else:
+        index = []
+        for pos in positions_df['position']:
+            for day in DAYS:
+                for shift in SHIFT_TIMES:
+                    index.append(f"{pos}__{day}__{shift}")
+        schedule = pd.DataFrame(index=index, columns=['name'])
 
-        st.markdown("בחר אילוצים (שבהם אינך יכול לעבוד):")
-        for day in DAYS:
-            cols = st.columns(len(SHIFTS))
-            for i, shift in enumerate(SHIFTS):
-                key = f"{day}_{shift}"
-                if cols[i].checkbox(f"{day} - {shift}", key=key):
-                    unavailable.append((day, shift))
+    st.title("📅 טבלת שיבוצים שבועית")
 
-        comment = st.text_area("הערות נוספות")
+    role = config['credentials']['usernames'][username]['role']
 
-        if st.button("שמור אילוצים"):
-            entry = {
-                "משתמש": username,
-                "שם": name,
-                "תאריך שליחה": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                "אילוצים": "; ".join([f"{d} ({s})" for d, s in unavailable]),
-                "הערות": comment
-            }
+    edited_schedule = schedule.copy()
 
-            try:
-                df = pd.read_csv(FILENAME)
-            except FileNotFoundError:
-                df = pd.DataFrame(columns=entry.keys())
+    for pos in positions_df['position']:
+        st.markdown(f"### עמדה: {pos}")
+        cols = st.columns(len(DAYS))
 
-            df = pd.concat([df, pd.DataFrame([entry])], ignore_index=True)
-            df.to_csv(FILENAME, index=False)
-            st.success("✅ האילוצים נשמרו בהצלחה!")
+        for d_idx, day in enumerate(DAYS):
+            with cols[d_idx]:
+                for shift in SHIFT_TIMES:
+                    key = f"{pos}__{day}__{shift}"
+                    current = schedule.loc[key, 'name'] if key in schedule.index else ""
 
-    # מנהל: צפייה באילוצים של כולם
-    if ROLE == "admin":
-        st.header("👀 צפייה באילוצים של כלל העובדים")
+                    label = f"{day} {shift}"
+                    if role == 'admin':
+                        # סינון לפי מין בעמדות סיור
+                        if pos in patrol_positions:
+                            male_workers = [w for w in workers if workers_gender.get(w) == 'זכר']
+                            selection = st.selectbox(label, [""] + male_workers, key=key, index=[""] + male_workers.index(current) if current in male_workers else 0)
+                        else:
+                            selection = st.selectbox(label, [""] + workers, key=key, index=[""] + workers.index(current) if current in workers else 0)
+                        edited_schedule.loc[key, 'name'] = selection
+                    else:
+                        st.markdown(f"**{label}:** {current if current else '-'}")
 
-        try:
-            df = pd.read_csv(FILENAME)
-            st.dataframe(df)
-        except FileNotFoundError:
-            st.info("אין עדיין אילוצים במערכת.")
-
-        st.markdown("---")
-        st.subheader("📆 תצוגת לוח שבועי")
-
-        # טבלת אילוצים לפי ימים ומשמרות
-        table = pd.DataFrame(index=SHIFTS, columns=DAYS)
-
-        # בונה מילון של אילוצים
-        try:
-            constraints_df = pd.read_csv(FILENAME)
-            all_constraints = {}
-            for _, row in constraints_df.iterrows():
-                name = row["שם"]
-                items = row["אילוצים"].split("; ")
-                for item in items:
-                    if " (" in item:
-                        d, s = item.replace(")", "").split(" (")
-                        all_constraints.setdefault((d, s), []).append(name)
-        except:
-            all_constraints = {}
-
-        for day in DAYS:
-            for shift in SHIFTS:
-                key = (day, shift)
-                names = all_constraints.get(key, [])
-                table.at[shift, day] = ", ".join(names)
-
-        st.dataframe(table.fillna("—"))
-
-
-
+    if role == 'admin' and st.button("💾 שמור שיבוצים"):
+        edited_schedule.to_csv(SCHEDULE_FILE)
+        st.success("השיבוצים נשמרו בהצלחה!")
