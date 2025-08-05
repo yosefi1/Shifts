@@ -5,6 +5,7 @@ from yaml.loader import SafeLoader
 from datetime import datetime
 import streamlit_authenticator as stauth
 import os
+import hashlib
 
 # --- הגדרות ---
 SHIFT_TIMES = ["08:00-12:00", "12:00-20:00", "20:00-00:00"]
@@ -58,17 +59,16 @@ else:
 
     edited_schedule = schedule.copy()
 
-    for pos_idx, pos in enumerate(positions_df['position']):
+    for pos in positions_df['position']:
         st.markdown(f"### עמדה: {pos}")
         cols = st.columns(len(DAYS))
 
         for d_idx, day in enumerate(DAYS):
             with cols[d_idx]:
-                for shift_idx, shift in enumerate(SHIFT_TIMES):
-                    key = f"{pos}_{day}_{shift}"  # key חייב להיות ייחודי לחלוטין
-                    label = f"{day} {shift}"
+                for shift in SHIFT_TIMES:
                     full_index = f"{pos}__{day}__{shift}"
-
+                    key = hashlib.md5(full_index.encode()).hexdigest()  # הפקת מפתח ייחודי אמיתי
+                    label = f"{day} {shift}"
                     current = schedule.loc[full_index, 'name'] if full_index in schedule.index else ""
                     current_str = str(current).strip()
 
@@ -86,4 +86,4 @@ else:
 
     if role == 'admin' and st.button("💾 שמור שיבוצים"):
         edited_schedule.to_csv(SCHEDULE_FILE)
-        st.success("השיבוצים נשמרו בהצלחה!")
+        st.success("השיבוצים נשמרו בהצלח
