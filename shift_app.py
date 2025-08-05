@@ -4,7 +4,7 @@ import yaml
 from yaml.loader import SafeLoader
 import streamlit_authenticator as stauth
 import os
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, JsCode
 
 # --- הגדרות ---
 SHIFT_TIMES = ["08:00-12:00", "12:00-20:00", "20:00-00:00"]
@@ -107,6 +107,38 @@ else:
 
     df = pd.DataFrame(table_data)
 
+    # --- JavaScript editor to force dropdown open ---
+    force_dropdown_editor = JsCode("""
+        class CustomSelectCellEditor {
+            init(params) {
+                this.eInput = document.createElement('select');
+                const values = params.values || [];
+                values.forEach(val => {
+                    const option = document.createElement('option');
+                    option.value = val;
+                    option.text = val;
+                    this.eInput.appendChild(option);
+                });
+                this.eInput.value = params.value;
+                setTimeout(() => this.eInput.focus());
+            }
+            getGui() {
+                return this.eInput;
+            }
+            afterGuiAttached() {
+                this.eInput.focus();
+                this.eInput.click();
+            }
+            getValue() {
+                return this.eInput.value;
+            }
+            destroy() {}
+            isPopup() {
+                return false;
+            }
+        }
+    """)
+
     # --- הגדרות AGGRID ---
     gb = GridOptionsBuilder.from_dataframe(df)
     gb.configure_default_column(
@@ -136,14 +168,12 @@ else:
         else:
             gb.configure_column(
                 col,
-                cellEditor='agSelectCellEditor',
+                cellEditor=force_dropdown_editor,
                 cellEditorParams={"values": workers},
                 width=140,
                 wrapText=True,
                 autoHeight=True,
-                editable=True,
-                singleClickEdit=True,
-                cellEditorPopup=True
+                editable=True
             )
 
     grid_options = gb.build()
@@ -190,3 +220,4 @@ else:
                     edited_schedule.loc[index_key, 'name'] = row[col]
         edited_schedule.to_csv(SCHEDULE_FILE)
         st.success("השיבוצים נשמרו בהצלחה!")
+
