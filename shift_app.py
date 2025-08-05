@@ -2,8 +2,10 @@ import streamlit as st
 import pandas as pd
 import yaml
 from yaml.loader import SafeLoader
+from datetime import datetime
 import streamlit_authenticator as stauth
 import os
+import hashlib
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 
 # --- הגדרות ---
@@ -36,6 +38,9 @@ else:
     workers_df = pd.read_csv("workers.csv", encoding='utf-8-sig')
     positions_df = pd.read_csv("positions.csv", encoding='utf-8')
     workers = workers_df['name'].tolist()
+    workers_gender = dict(zip(workers_df['name'], workers_df['gender']))
+
+    patrol_positions = ["סיור 10", "סיור 10א"]
 
     if os.path.exists(SCHEDULE_FILE):
         schedule = pd.read_csv(SCHEDULE_FILE, index_col=0)
@@ -60,28 +65,25 @@ else:
         .ag-theme-streamlit .ag-header-cell-label {
             white-space: normal !important;
             text-align: center;
-            font-weight: bold;
         }
         .ag-theme-streamlit .ag-header {
             font-weight: bold;
-            background-color: #f5f5f5;
         }
-        .ag-theme-streamlit .ag-cell {
-            line-height: 1.6 !important;
-            border-right: 1px solid #ddd !important;
-            text-align: center;
-        }
-        .ag-theme-streamlit .ag-row {
-            border-bottom: 1px solid #ddd !important;
+        .css-1v0mbdj.e115fcil1 {
+            padding: 0;
         }
         .ag-root-wrapper {
             width: 100% !important;
         }
-        .ag-select-cell-editor {
-            width: 100% !important;
+        .ag-theme-streamlit .ag-cell {
+            line-height: 1.6 !important;
+            border-right: 1px solid #ddd !important;
         }
-        .ag-cell-focus {
-            border: 1px solid #007bff !important;
+        .ag-theme-streamlit .ag-row {
+            border-bottom: 1px solid #ddd !important;
+        }
+        .ag-theme-streamlit .ag-header-cell, .ag-theme-streamlit .ag-cell {
+            border-right: 1px solid #ccc !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -106,40 +108,26 @@ else:
 
     # --- הגדרות AGGRID ---
     gb = GridOptionsBuilder.from_dataframe(df)
-    gb.configure_default_column(
-        editable=(role == 'admin'),
-        resizable=True,
-        wrapText=True,
-        autoHeight=True,
-        singleClickEdit=True,  # Enable single-click editing
-        cellStyle={"textAlign": "center"}
-    )
+    gb.configure_default_column(editable=(role == 'admin'), resizable=True, wrapText=True, autoHeight=True)
     gb.configure_grid_options(
         domLayout='normal',
         suppressRowClickSelection=False,
-        stopEditingWhenCellsLoseFocus=True  # Stop editing when clicking away
+        singleClickEdit=True,
+        stopEditingWhenCellsLoseFocus=False,
+        enterMovesDownAfterEdit=True
     )
 
-    # Configure columns
     for col in df.columns:
         if col == 'עמדה':
-            gb.configure_column(
-                col,
-                width=150,  # Fixed width for position column
-                wrapText=True,
-                autoHeight=True,
-                pinned='left'  # Pin to left for RTL
-            )
+            gb.configure_column(col, autoSize=True, wrapText=True)
         else:
             gb.configure_column(
                 col,
+                editable=(role == 'admin'),
                 cellEditor='agSelectCellEditor',
-                cellEditorParams={"values": [""] + workers},  # Add empty option
-                cellEditorPopup=True,  # Show dropdown as popup
-                cellEditorPopupPos='under',  # Position popup under the cell
-                width=120,  # Fixed width for shift columns
-                wrapText=True,
-                autoHeight=True
+                cellEditorParams={"values": workers, "cellEditorPopup": True},
+                autoSize=True,
+                wrapText=True
             )
 
     grid_options = gb.build()
@@ -153,25 +141,7 @@ else:
         allow_unsafe_jscode=True,
         reload_data=False,
         height=600,
-        theme="streamlit",
-        custom_css={
-            ".ag-cell": {
-                "border-right": "1px solid #ccc !important",
-                "border-bottom": "1px solid #ccc !important",
-                "text-align": "center",
-            },
-            ".ag-header-cell": {
-                "border-right": "1px solid #ccc !important",
-                "background-color": "#f5f5f5",
-                "font-weight": "bold",
-            },
-            ".ag-select-cell-editor": {
-                "width": "100% !important",
-            },
-            ".ag-cell-focus": {
-                "border": "1px solid #007bff !important",
-            }
-        }
+        theme="streamlit"
     )
 
     updated_df = grid_response['data']
