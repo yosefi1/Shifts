@@ -8,6 +8,7 @@ import os
 from views.view_schedule import show_schedule_tab
 from views.mark_constraints import show_constraints_tab
 from utils.helpers import SHIFT_TIMES, DAYS
+from views.view_constraints_admin import show_admin_constraints_view
 
 # --- Load config ---
 with open('config.yaml') as file:
@@ -51,3 +52,4 @@ else:
         show_schedule_tab(role)
     with tabs[1]:
         show_constraints_tab(username)
+
