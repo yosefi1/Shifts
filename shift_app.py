@@ -35,8 +35,10 @@ else:
     # טען עובדים ועמדות
     workers_df = pd.read_csv("workers.csv", encoding='utf-8-sig')
     positions_df = pd.read_csv("positions.csv", encoding='utf-8')
-    workers = workers_df['name'].tolist()
+    workers = workers_df['name'].dropna().astype(str).str.strip().tolist()
+    workers = [w for w in workers if w != ""]  # Clean empty names
 
+    # טען/צור טבלת שיבוצים
     if os.path.exists(SCHEDULE_FILE):
         schedule = pd.read_csv(SCHEDULE_FILE, index_col=0)
     else:
@@ -47,7 +49,7 @@ else:
                     index.append(f"{pos}__{day}__{shift}")
         schedule = pd.DataFrame(index=index, columns=['name'])
 
-    # --- עיצוב RTL ויישור ---
+    # עיצוב RTL
     st.markdown("""
         <style>
         div[data-testid="stMarkdownContainer"] {
@@ -91,20 +93,20 @@ else:
     role = config['credentials']['usernames'][username]['role']
     edited_schedule = schedule.copy()
 
-    # --- בניית DataFrame לטבלה ---
+    # בניית DataFrame לתצוגה
     table_data = []
     for pos in positions_df['position']:
         row = {"עמדה": pos}
         for day in DAYS:
             for shift in SHIFT_TIMES:
-                key = f"{day} {shift}"
+                col = f"{day} {shift}"
                 index_key = f"{pos}__{day}__{shift}"
-                row[key] = schedule.loc[index_key, 'name'] if index_key in schedule.index else ""
+                row[col] = schedule.loc[index_key, 'name'] if index_key in schedule.index else ""
         table_data.append(row)
 
-    df = pd.DataFrame(table_data)
+    df = pd.DataFrame(table_data).fillna("")
 
-    # --- הגדרות AGGRID ---
+    # הגדרות AG Grid
     gb = GridOptionsBuilder.from_dataframe(df)
     gb.configure_default_column(
         editable=(role == 'admin'),
@@ -123,13 +125,7 @@ else:
 
     for col in df.columns:
         if col == 'עמדה':
-            gb.configure_column(
-                col,
-                width=150,
-                wrapText=True,
-                autoHeight=True,
-                pinned='left'
-            )
+            gb.configure_column(col, width=150, wrapText=True, autoHeight=True, pinned='left')
         else:
             gb.configure_column(
                 col,
@@ -144,38 +140,25 @@ else:
 
     grid_options = gb.build()
 
-    grid_response = AgGrid(
-        df,
-        gridOptions=grid_options,
-        update_mode=GridUpdateMode.VALUE_CHANGED,
-        fit_columns_on_grid_load=False,
-        enable_enterprise_modules=False,
-        allow_unsafe_jscode=True,
-        reload_data=False,
-        height=600,
-        theme="streamlit",
-        custom_css={
-            ".ag-cell": {
-                "border-right": "1px solid #ccc !important",
-                "border-bottom": "1px solid #ccc !important",
-                "text-align": "center",
-            },
-            ".ag-header-cell": {
-                "border-right": "1px solid #ccc !important",
-                "background-color": "#f5f5f5",
-                "font-weight": "bold",
-            },
-            ".ag-select-cell-editor": {
-                "width": "100% !important",
-            },
-            ".ag-cell-focus": {
-                "border": "1px solid #007bff !important",
-            }
-        }
-    )
+    # הצגת הטבלה
+    try:
+        grid_response = AgGrid(
+            df,
+            gridOptions=grid_options,
+            update_mode=GridUpdateMode.VALUE_CHANGED,
+            fit_columns_on_grid_load=False,
+            enable_enterprise_modules=False,
+            allow_unsafe_jscode=True,
+            reload_data=False,
+            height=600,
+            theme="streamlit"
+        )
+        updated_df = grid_response['data']
+    except Exception as e:
+        st.error(f"AG Grid error: {e}")
+        st.stop()
 
-    updated_df = grid_response['data']
-
+    # כפתור שמירה
     if role == 'admin' and st.button("📅 שמור שיבוצים"):
         for idx, row in updated_df.iterrows():
             pos = row['עמדה']
@@ -186,4 +169,3 @@ else:
                     edited_schedule.loc[index_key, 'name'] = row[col]
         edited_schedule.to_csv(SCHEDULE_FILE)
         st.success("השיבוצים נשמרו בהצלחה!")
-
