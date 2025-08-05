@@ -13,8 +13,7 @@ CUSTOM_SHIFT_TIMES_PER_DAY = {
     "רביעי": ["08:00-12:00", "12:00-20:00"],
     "חמישי": ["08:00-12:00", "12:00-20:00"],
     "שישי": ["08:00-12:00", "12:00-20:00"],
-    "שבת": ["08:00-12:00", "12:00-20:00"],
-    "ראשון שאחריו": ["08:00-12:00"]
+    "שבת": ["08:00-12:00", "12:00-20:00"]
 }
 
 def show_constraints_tab(username):
@@ -45,47 +44,21 @@ def show_constraints_tab(username):
         except Exception as e:
             st.error(f"שגיאה בטעינת אילוצים קודמים: {e}")
 
-    # טבלת סימון עם AgGrid
-    from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
+    # טבלת סימון פשוטה
+    st.markdown("### סמן את המשבצות בהן אינך יכול לעבוד:")
+    updated_rows = []
+    for index, row in df.iterrows():
+        day = row["יום"]
+        cols = st.columns(len(CUSTOM_SHIFT_TIMES_PER_DAY[day]) + 1)
+        cols[0].markdown(f"**{day}**")
+        row_data = {"יום": day}
+        for i, shift in enumerate(CUSTOM_SHIFT_TIMES_PER_DAY[day]):
+            key = f"{day}_{shift}_{username}"
+            checked = cols[i+1].checkbox(shift, value=row.get(shift, False), key=key)
+            row_data[shift] = checked
+        updated_rows.append(row_data)
 
-    gb = GridOptionsBuilder.from_dataframe(df)
-    gb.configure_default_column(resizable=True, wrapText=True, autoHeight=True)
-    gb.configure_grid_options(domLayout='normal')
-
-    for col in df.columns:
-        if col == "יום":
-            gb.configure_column(col, editable=False, pinned='left', width=150)
-        else:
-            gb.configure_column(col, editable=True, cellEditor='agCheckboxCellEditor', width=140)
-
-    grid_options = gb.build()
-
-    grid_response = AgGrid(
-        df,
-        gridOptions=grid_options,
-        update_mode=GridUpdateMode.VALUE_CHANGED,
-        fit_columns_on_grid_load=True,
-        theme="streamlit",
-        height=500,
-        allow_unsafe_jscode=True,
-        custom_css={
-            ".ag-cell": {
-                "border-right": "1px solid #ccc !important",
-                "border-bottom": "1px solid #ccc !important",
-                "text-align": "center",
-            },
-            ".ag-header-cell": {
-                "border-right": "1px solid #ccc !important",
-                "background-color": "#f5f5f5",
-                "font-weight": "bold",
-            },
-            ".ag-cell-focus": {
-                "border": "1px solid #007bff !important",
-            }
-        }
-    )
-
-    updated_df = grid_response['data']
+    updated_df = pd.DataFrame(updated_rows)
 
     # הערה
     st.markdown("### הערה למנהל (לא חובה):")
@@ -101,7 +74,7 @@ def show_constraints_tab(username):
         for idx, row in updated_df.iterrows():
             day = row["יום"]
             for shift in CUSTOM_SHIFT_TIMES_PER_DAY.get(day, []):
-                if row.get(shift) == True:
+                if row.get(shift):
                     blocked.append((day, shift))
 
         df_save = pd.DataFrame(blocked, columns=["day", "shift"])
