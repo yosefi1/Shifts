@@ -106,14 +106,27 @@ else:
     # --- הגדרות AGGRID ---
     gb = GridOptionsBuilder.from_dataframe(df)
     gb.configure_default_column(editable=(role == 'admin'), resizable=True, wrapText=True, autoHeight=True)
-    gb.configure_grid_options(domLayout='normal', suppressRowClickSelection=False)
+    gb.configure_grid_options(
+        domLayout='normal', 
+        suppressRowClickSelection=False, 
+        singleClickEdit=True,
+        stopEditingWhenCellsLoseFocus=False,
+        enterMovesDownAfterEdit=True
+    )
 
     # רוחב אוטומטי לעמודה ראשונה ולשאר העמודות לפי הכותרת
     for col in df.columns:
         if col == 'עמדה':
             gb.configure_column(col, autoSize=True, wrapText=True)
         else:
-            gb.configure_column(col, cellEditor='agSelectCellEditor', cellEditorParams={"values": workers}, autoSize=True, wrapText=True)
+            gb.configure_column(
+                col,
+                editable=(role == 'admin'),
+                cellEditor='agSelectCellEditor',
+                cellEditorParams={"values": workers},
+                autoSize=True,
+                wrapText=True
+            )
 
     grid_options = gb.build()
 
@@ -126,18 +139,8 @@ else:
         allow_unsafe_jscode=True,
         reload_data=False,
         height=600,
-        theme="streamlit",
-        custom_css={
-            ".ag-cell": {
-                "border-right": "1px solid #ccc !important",
-                "border-bottom": "1px solid #ccc !important",
-            },
-            ".ag-header-cell": {
-                "border-right": "1px solid #ccc !important",
-            }
-        }
+        theme="streamlit"
     )
-
 
     updated_df = grid_response['data']
 
@@ -151,5 +154,3 @@ else:
                     edited_schedule.loc[index_key, 'name'] = row[col]
         edited_schedule.to_csv(SCHEDULE_FILE)
         st.success("השיבוצים נשמרו בהצלחה!")
-
-
