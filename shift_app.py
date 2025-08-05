@@ -59,6 +59,8 @@ else:
 
     edited_schedule = schedule.copy()
 
+    used_keys = set()  # מעקב אחר מפתחות בשימוש
+
     for pos in positions_df['position']:
         st.markdown(f"### עמדה: {pos}")
         cols = st.columns(len(DAYS))
@@ -67,7 +69,12 @@ else:
             with cols[d_idx]:
                 for shift in SHIFT_TIMES:
                     full_index = f"{pos}__{day}__{shift}"
-                    key = hashlib.md5(full_index.encode()).hexdigest()  # הפקת מפתח ייחודי אמיתי
+                    key = hashlib.md5(full_index.encode()).hexdigest()[:10]  # קיצור מפתח כדי למנוע שגיאות
+                    while key in used_keys:
+                        full_index += "_"
+                        key = hashlib.md5(full_index.encode()).hexdigest()[:10]
+                    used_keys.add(key)
+
                     label = f"{day} {shift}"
                     current = schedule.loc[full_index, 'name'] if full_index in schedule.index else ""
                     current_str = str(current).strip()
