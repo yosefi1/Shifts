@@ -1,8 +1,7 @@
 import streamlit as st
-from aggrid_component.aggrid_component import aggrid_component
+from dropdown_component.dropdown_component import dropdown_component
 
-st.title("📅 מערכת שיבוצים")
-st.subheader("🔧 Test AG Grid Component")
+st.title("📋 טבלת שיבוצים - Dropdown Demo")
 
 data = [
     {"position": "א'", "ראשון 08:00-12:00": "", "ראשון 12:00-20:00": ""},
@@ -11,10 +10,7 @@ data = [
 columns = ["ראשון 08:00-12:00", "ראשון 12:00-20:00"]
 workers = ["⬇ בחר", "יוסי", "דוד", "שרה"]
 
-try:
-    result = aggrid_component(data=data, workers=workers, columns=columns)
-    if result:
-        st.success("✅ Updated table received!")
-        st.write(result)
-except Exception as e:
-    st.error(f"Component error: {e}")
+result = dropdown_component(data=data, columns=columns, workers=workers)
+if result:
+    st.success("✅ טבלה עודכנה")
+    st.write(result)
