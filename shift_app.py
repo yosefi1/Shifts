@@ -69,41 +69,55 @@ else:
     st.markdown("<style>th, td {text-align: center !important;}</style>", unsafe_allow_html=True)
 
     # הצגת הטבלה
-    for idx, pos in enumerate(positions_df['position']):
-        row = []
-        row.append(f"### {pos}")
-        cols = st.columns(len(DAYS) * len(SHIFT_TIMES))
+        st.markdown("<style>th, td {text-align: center !important;} .st-emotion-cache-1kyxreq {direction: rtl;}</style>", unsafe_allow_html=True)
 
-        col_idx = 0
+    st.write("### טבלת שיבוצים")
+
+    # בניית טבלה בצורת עמדות × ימים×משמרות
+    table_rows = []
+
+    for pos in positions_df['position']:
+        row = []
+        row.append(pos)  # תא ראשון – שם העמדה
         for day in DAYS:
             for shift in SHIFT_TIMES:
                 full_index = f"{pos}__{day}__{shift}"
-                key_base = f"{pos}_{day}_{shift}"
-                key = hashlib.md5(key_base.encode()).hexdigest()[:10]
-                while key in used_keys:
-                    key_base += "_"
-                    key = hashlib.md5(key_base.encode()).hexdigest()[:10]
-                used_keys.add(key)
-
                 current = schedule.loc[full_index, 'name'] if full_index in schedule.index else ""
                 current_str = str(current).strip()
 
-                with cols[col_idx]:
-                    label = f"{day} {shift}"
-                    if role == 'admin':
-                        if pos in patrol_positions:
-                            male_workers = [w for w in workers if workers_gender.get(w) == 'זכר']
-                            index_val = male_workers.index(current_str) + 1 if current_str in male_workers else 0
-                            selection = st.selectbox("", [""] + male_workers, key=key, index=index_val)
-                        else:
-                            index_val = workers.index(current_str) + 1 if current_str in workers else 0
-                            selection = st.selectbox("", [""] + workers, key=key, index=index_val)
-                        edited_schedule.loc[full_index, 'name'] = selection
+                key_base = f"{pos}_{day}_{shift}"
+                key = hashlib.md5(key_base.encode()).hexdigest()[:10]
+                if key in used_keys:
+                    # הגנה נוספת משכפול
+                    counter = 1
+                    while f"{key}_{counter}" in used_keys:
+                        counter += 1
+                    key = f"{key}_{counter}"
+                used_keys.add(key)
+
+                if role == 'admin':
+                    if pos in patrol_positions:
+                        male_workers = [w for w in workers if workers_gender.get(w) == 'זכר']
+                        index_val = male_workers.index(current_str) + 1 if current_str in male_workers else 0
+                        cell = st.selectbox(label="", options=[""] + male_workers, key=key, index=index_val)
                     else:
-                        st.markdown(f"**{current_str if current_str else '-'}**")
-                col_idx += 1
+                        index_val = workers.index(current_str) + 1 if current_str in workers else 0
+                        cell = st.selectbox(label="", options=[""] + workers, key=key, index=index_val)
+                    edited_schedule.loc[full_index, 'name'] = cell
+                    row.append(cell)
+                else:
+                    row.append(current_str if current_str else "-")
+
+        table_rows.append(row)
+
+    # יצירת כותרת הטבלה
+    columns = ["עמדה"] + [f"{day}\n{shift}" for day in DAYS for shift in SHIFT_TIMES]
+    table_df = pd.DataFrame(table_rows, columns=columns)
+    st.dataframe(table_df, use_container_width=True, hide_index=True)
 
     if role == 'admin' and st.button("💾 שמור שיבוצים"):
         edited_schedule.to_csv(SCHEDULE_FILE)
         st.success("השיבוצים נשמרו בהצלחה!")
+
+
 
