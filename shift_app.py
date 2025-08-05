@@ -60,20 +60,25 @@ else:
             text-align: right;
         }
         .block-container {
-            padding: 0 3rem;
+            padding: 0 1rem;
         }
         .ag-theme-streamlit .ag-header-cell-label {
             white-space: normal !important;
             text-align: center;
         }
-        .ag-theme-streamlit .ag-cell {
-            border-right: 1px solid #dee2e6;
-            border-bottom: 1px solid #dee2e6;
+        .ag-theme-streamlit .ag-cell, .ag-theme-streamlit .ag-header-cell {
+            border-right: 1px solid #ccc !important;
+            border-bottom: 1px solid #ccc !important;
+        }
+        .ag-theme-streamlit .ag-header {
+            font-weight: bold;
+        }
+        .css-1v0mbdj.e115fcil1 {
+            padding: 0;
         }
         </style>
     """, unsafe_allow_html=True)
 
-    st.markdown("""<style>.css-1v0mbdj.e115fcil1 { padding: 0 }</style>""", unsafe_allow_html=True)
     st.title("📅 טבלת שיבוצים שבועית")
 
     role = config['credentials']['usernames'][username]['role']
@@ -96,14 +101,15 @@ else:
     gb = GridOptionsBuilder.from_dataframe(df)
     gb.configure_default_column(editable=(role == 'admin'), resizable=True, wrapText=True, autoHeight=True)
     gb.configure_grid_options(domLayout='autoHeight', suppressRowClickSelection=False)
-    gb.configure_columns(df.columns[1:], cellEditor='agSelectCellEditor', cellEditorParams={"values": workers})
+    gb.configure_columns(df.columns[1:], cellEditor='agSelectCellEditor', cellEditorParams={"values": workers}, autoSize=True)
+    gb.configure_columns(df.columns[0], autoSize=True)
     grid_options = gb.build()
 
     grid_response = AgGrid(
         df,
         gridOptions=grid_options,
         update_mode=GridUpdateMode.VALUE_CHANGED,
-        fit_columns_on_grid_load=True,
+        fit_columns_on_grid_load=False,
         enable_enterprise_modules=False,
         height=None,
         reload_data=False,
