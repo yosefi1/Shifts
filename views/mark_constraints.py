@@ -1,60 +1,55 @@
-# views/mark_constraints.py
-
 import streamlit as st
 import pandas as pd
 import os
-from st_aggrid import AgGrid, GridOptionsBuilder
 from utils.helpers import SHIFT_TIMES, DAYS
 
+CONSTRAINT_DIR = "constraints"
+
 def show_constraints_tab(username):
-    st.subheader("🚫 אילוצים לשבוע הבא")
-    st.info("סמן אילוצים - באילו משמרות אינך יכול לעבוד")
+    st.subheader("🚫 סימון אילוצים לשבוע הבא")
 
-    positions_df = pd.read_csv("positions.csv", encoding="utf-8")
-    constraint_file = f"data/constraints__{username}.csv"
+    # Load positions
+    positions_df = pd.read_csv("positions.csv", encoding='utf-8')
+    positions = positions_df['position'].tolist()
 
-    # Build empty table if not exists
+    # Load existing constraints if available
+    os.makedirs(CONSTRAINT_DIR, exist_ok=True)
+    constraint_file = os.path.join(CONSTRAINT_DIR, f"{username}_constraints.csv")
+    note_file = os.path.join(CONSTRAINT_DIR, f"{username}_note.txt")
+
     if os.path.exists(constraint_file):
-        df = pd.read_csv(constraint_file)
+        constraints_df = pd.read_csv(constraint_file)
+        marked = set(tuple(row) for row in constraints_df.values)
     else:
-        table_data = []
-        for pos in positions_df['position']:
-            row = {"עמדה": pos}
-            for day in DAYS:
-                for shift in SHIFT_TIMES:
-                    key = f"{day} {shift}"
-                    row[key] = "יכול"
-            table_data.append(row)
-        df = pd.DataFrame(table_data)
+        marked = set()
 
-    # AG Grid config
-    gb = GridOptionsBuilder.from_dataframe(df)
-    gb.configure_default_column(
-        editable=True,
-        resizable=True,
-        wrapText=True,
-        autoHeight=True,
-        singleClickEdit=True,
-        cellEditor='agSelectCellEditor',
-        cellEditorParams={'values': ["יכול", "לא יכול"]},
-        cellStyle={"textAlign": "center"}
-    )
-    gb.configure_column("עמדה", editable=False, pinned='left', width=150)
+    # Build grid with ❌ buttons
+    st.markdown("### סמן את המשבצות בהן אינך יכול לעבוד:")
+    for pos in positions:
+        st.markdown(f"#### עמדה: {pos}")
+        for day in DAYS:
+            cols = st.columns(len(SHIFT_TIMES))
+            for i, shift in enumerate(SHIFT_TIMES):
+                key = f"{pos}__{day}__{shift}"
+                is_marked = (pos, day, shift) in marked
+                if cols[i].button("❌" if is_marked else "⬜", key=key):
+                    if is_marked:
+                        marked.remove((pos, day, shift))
+                    else:
+                        marked.add((pos, day, shift))
 
-    grid_options = gb.build()
+    # Note box
+    st.markdown("### הערה למנהל (לא חובה):")
+    note = ""
+    if os.path.exists(note_file):
+        with open(note_file, "r", encoding='utf-8') as f:
+            note = f.read()
+    note_input = st.text_area("הקלד הערה", value=note)
 
-    grid_response = AgGrid(
-        df,
-        gridOptions=grid_options,
-        update_mode="VALUE_CHANGED",
-        height=600,
-        fit_columns_on_grid_load=True,
-        allow_unsafe_jscode=True,
-        theme="streamlit"
-    )
-
+    # Save button
     if st.button("💾 שמור אילוצים"):
-        updated_df = grid_response['data']
-        os.makedirs("data", exist_ok=True)
-        updated_df.to_csv(constraint_file, index=False)
+        df = pd.DataFrame(marked, columns=["position", "day", "shift"])
+        df.to_csv(constraint_file, index=False, encoding='utf-8-sig')
+        with open(note_file, "w", encoding='utf-8') as f:
+            f.write(note_input)
         st.success("האילוצים נשמרו בהצלחה!")
