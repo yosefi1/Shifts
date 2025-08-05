@@ -18,4 +18,3 @@ try:
         st.write(result)
 except Exception as e:
     st.error(f"Component error: {e}")
-
