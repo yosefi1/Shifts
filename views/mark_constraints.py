@@ -6,7 +6,7 @@ from utils.helpers import DAYS
 CONSTRAINT_DIR = "constraints"
 
 # שעות משמרת מותאמות לכל יום
-CUSTOM_SHIFT_TIMES_PER_DAY = {
+SHIFT_STRUCTURE = {
     "ראשון": ["20:00-00:00"],
     "שני": ["08:00-12:00", "12:00-20:00"],
     "שלישי": ["08:00-12:00", "12:00-20:00"],
@@ -14,7 +14,7 @@ CUSTOM_SHIFT_TIMES_PER_DAY = {
     "חמישי": ["08:00-12:00", "12:00-20:00"],
     "שישי": ["08:00-12:00", "12:00-20:00"],
     "שבת": ["08:00-12:00", "12:00-20:00"],
-    "ראשון": ["08:00-12:00"]  # ראשון אחרי כלול באותו "ראשון"
+    "ראשון שאחריו": ["08:00-12:00"]
 }
 
 def show_constraints_tab(username):
@@ -24,11 +24,15 @@ def show_constraints_tab(username):
     constraint_file = os.path.join(CONSTRAINT_DIR, f"{username}_constraints.csv")
     note_file = os.path.join(CONSTRAINT_DIR, f"{username}_note.txt")
 
-    # יצירת טבלה
-    all_shifts = sorted({shift for shifts in CUSTOM_SHIFT_TIMES_PER_DAY.values() for shift in shifts})
-    df = pd.DataFrame(index=CUSTOM_SHIFT_TIMES_PER_DAY.keys(), columns=all_shifts)
-    df.index.name = "יום"
-    df.fillna(False, inplace=True)
+    # יצירת טבלה עם כל המשמרות
+    all_shifts = ["08:00-12:00", "12:00-20:00"]
+    table_data = []
+    for day, shifts in SHIFT_STRUCTURE.items():
+        row = {"יום": day}
+        for shift in all_shifts:
+            row[shift] = False if shift in shifts else None
+        table_data.append(row)
+    df = pd.DataFrame(table_data).set_index("יום")
 
     # טעינת אילוצים קיימים
     if os.path.exists(constraint_file):
@@ -43,22 +47,21 @@ def show_constraints_tab(username):
 
     # טבלת סימון עם צ'קבוקסים
     st.markdown("### סמן את המשמרות בהן אינך יכול לעבוד:")
-    edited = []
+    updated_rows = []
     for day in df.index:
-        cols = st.columns(len(df.columns) + 1)
+        cols = st.columns(len(all_shifts) + 1)
         cols[0].markdown(f"**{day}**")
-        row_data = {"יום": day}
-        for i, shift in enumerate(df.columns):
-            if shift in CUSTOM_SHIFT_TIMES_PER_DAY[day]:
+        row = {"יום": day}
+        for i, shift in enumerate(all_shifts):
+            if SHIFT_STRUCTURE.get(day) and shift in SHIFT_STRUCTURE[day]:
                 key = f"{day}_{shift}_{username}"
-                checked = cols[i+1].checkbox("", value=df.at[day, shift], key=key)
-                row_data[shift] = checked
+                row[shift] = cols[i + 1].checkbox("", value=bool(df.at[day, shift]), key=key)
             else:
-                cols[i+1].markdown("❌")
-                row_data[shift] = False
-        edited.append(row_data)
+                cols[i + 1].markdown("❌")
+                row[shift] = None
+        updated_rows.append(row)
 
-    updated_df = pd.DataFrame(edited).set_index("יום")
+    updated_df = pd.DataFrame(updated_rows).set_index("יום")
 
     # הערה
     st.markdown("### הערה למנהל (לא חובה):")
@@ -72,8 +75,8 @@ def show_constraints_tab(username):
     if st.button("💾 שמור אילוצים"):
         blocked = []
         for day in updated_df.index:
-            for shift in CUSTOM_SHIFT_TIMES_PER_DAY[day]:
-                if updated_df.at[day, shift]:
+            for shift in all_shifts:
+                if updated_df.at[day, shift] == True:
                     blocked.append((day, shift))
 
         df_save = pd.DataFrame(blocked, columns=["day", "shift"])
