@@ -1,55 +1,62 @@
 import streamlit as st
-import pandas as pd
 import os
-from utils.helpers import SHIFT_TIMES, DAYS
+import pandas as pd
+from st_aggrid import AgGrid, GridOptionsBuilder
 
 CONSTRAINT_DIR = "constraints"
 
-def show_constraints_tab(username):
-    st.subheader("🚫 סימון אילוצים לשבוע הבא")
 
-    # Load positions
-    positions_df = pd.read_csv("positions.csv", encoding='utf-8')
-    positions = positions_df['position'].tolist()
+def show_admin_constraints_view():
+    st.subheader("📋 צפייה באילוצים של עובדים")
 
-    # Load existing constraints if available
-    os.makedirs(CONSTRAINT_DIR, exist_ok=True)
-    constraint_file = os.path.join(CONSTRAINT_DIR, f"{username}_constraints.csv")
-    note_file = os.path.join(CONSTRAINT_DIR, f"{username}_note.txt")
+    if not os.path.exists(CONSTRAINT_DIR):
+        st.info("אין אילוצים להצגה עדיין.")
+        return
 
-    if os.path.exists(constraint_file):
-        constraints_df = pd.read_csv(constraint_file)
-        marked = set(tuple(row) for row in constraints_df.values)
+    usernames = [f.split("_constraints.csv")[0] for f in os.listdir(CONSTRAINT_DIR) if f.endswith("_constraints.csv")]
+    if not usernames:
+        st.info("אין אילוצים להצגה עדיין.")
+        return
+
+    selected_user = st.selectbox("בחר עובד לצפייה באילוצים:", usernames)
+
+    constraint_file = os.path.join(CONSTRAINT_DIR, f"{selected_user}_constraints.csv")
+    note_file = os.path.join(CONSTRAINT_DIR, f"{selected_user}_note.txt")
+
+    st.markdown(f"### אילוצים של {selected_user}")
+
+    try:
+        df = pd.read_csv(constraint_file)
+    except Exception as e:
+        st.error(f"שגיאה בטעינת הקובץ: {e}")
+        return
+
+    if df.empty:
+        st.info("אין אילוצים רשומים לעובד זה.")
     else:
-        marked = set()
+        pivot = df.pivot(index="position", columns=["day", "shift"], values="blocked")
+        pivot.fillna("", inplace=True)
 
-    # Build grid with ❌ buttons
-    st.markdown("### סמן את המשבצות בהן אינך יכול לעבוד:")
-    for pos in positions:
-        st.markdown(f"#### עמדה: {pos}")
-        for day in DAYS:
-            cols = st.columns(len(SHIFT_TIMES))
-            for i, shift in enumerate(SHIFT_TIMES):
-                key = f"{pos}__{day}__{shift}"
-                is_marked = (pos, day, shift) in marked
-                if cols[i].button("❌" if is_marked else "⬜", key=key):
-                    if is_marked:
-                        marked.remove((pos, day, shift))
-                    else:
-                        marked.add((pos, day, shift))
+        gb = GridOptionsBuilder.from_dataframe(pivot)
+        gb.configure_default_column(resizable=True, wrapText=True, autoHeight=True)
+        gb.configure_grid_options(domLayout='normal')
+        grid_options = gb.build()
 
-    # Note box
-    st.markdown("### הערה למנהל (לא חובה):")
-    note = ""
+        AgGrid(
+            pivot,
+            gridOptions=grid_options,
+            height=500,
+            fit_columns_on_grid_load=True,
+            theme="streamlit"
+        )
+
     if os.path.exists(note_file):
         with open(note_file, "r", encoding='utf-8') as f:
-            note = f.read()
-    note_input = st.text_area("הקלד הערה", value=note)
-
-    # Save button
-    if st.button("💾 שמור אילוצים"):
-        df = pd.DataFrame(marked, columns=["position", "day", "shift"])
-        df.to_csv(constraint_file, index=False, encoding='utf-8-sig')
-        with open(note_file, "w", encoding='utf-8') as f:
-            f.write(note_input)
-        st.success("האילוצים נשמרו בהצלחה!")
+            note = f.read().strip()
+        if note:
+            st.markdown("### הערת העובד:")
+            st.info(note)
+        else:
+            st.markdown("(ללא הערה)")
+    else:
+        st.markdown("(ללא קובץ הערה)")
