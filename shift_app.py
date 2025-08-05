@@ -143,8 +143,7 @@ else:
                 autoHeight=True,
                 editable=True,
                 singleClickEdit=True,
-                cellEditorPopup=True,
-                cellRenderer="agGroupCellRenderer"
+                cellEditorPopup=True
             )
 
     grid_options = gb.build()
