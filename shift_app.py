@@ -1,44 +1,21 @@
 import streamlit as st
 import pandas as pd
 
-# Sample data like your shift table
-SHIFT_TIMES = ["08:00-12:00", "12:00-20:00", "20:00-00:00"]
-DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"]
-positions = ["א'", "ב'", "ג'"]
+# Create a fake table layout
+positions = ['א׳', 'ב׳']
+DAYS = ["ראשון", "שני"]
+SHIFTS = ["08:00-12:00", "12:00-20:00"]
 workers = ["⬇ בחר", "דוד", "יוסי", "שרה"]
 
-# Build sample DataFrame
-data = []
+st.markdown("## טבלת שיבוצים")
+
 for pos in positions:
-    row = {"עמדה": pos}
+    st.markdown(f"### {pos}")
     for day in DAYS:
-        for shift in SHIFT_TIMES:
-            col_name = f"{day} {shift}"
-            row[col_name] = ""
-    data.append(row)
-
-df = pd.DataFrame(data)
-
-# Editable config with dropdowns
-edit_config = {}
-for col in df.columns:
-    if col != "עמדה":
-        edit_config[col] = st.column_config.SelectboxColumn(
-            label=col,
-            options=workers,
-            required=False
-        )
-
-# Show editable table
-edited_df = st.data_editor(
-    df,
-    column_config=edit_config,
-    use_container_width=True,
-    num_rows="dynamic",
-    hide_index=True
-)
-
-# Save button
-if st.button("📅 שמור שיבוצים"):
-    st.success("השיבוצים נשמרו בהצלחה!")
-    # Save edited_df to CSV or DB
+        for shift in SHIFTS:
+            key = f"{pos}__{day}__{shift}"
+            st.selectbox(
+                f"{day} {shift}",
+                workers,
+                key=key
+            )
