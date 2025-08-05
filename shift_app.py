@@ -88,7 +88,7 @@ else:
         display: flex;
     }
     </style>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 
     st.title("📅 טבלת שיבוצים שבועית")
