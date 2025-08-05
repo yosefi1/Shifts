@@ -83,6 +83,9 @@ else:
         .ag-cell-focus {
             border: 1px solid #007bff !important;
         }
+        .ag-cell-inline-editing {
+            padding: 0 !important;
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -99,7 +102,7 @@ else:
             for shift in SHIFT_TIMES:
                 key = f"{day} {shift}"
                 index_key = f"{pos}__{day}__{shift}"
-                row[key] = schedule.loc[index_key, 'name'] if index_key in schedule.index else ""
+                row[key] = schedule.loc[index_key, 'name'] if index_key in schedule.index else "⬇ בחר"
         table_data.append(row)
 
     df = pd.DataFrame(table_data)
@@ -139,7 +142,8 @@ else:
                 wrapText=True,
                 autoHeight=True,
                 editable=True,
-                singleClickEdit=True
+                singleClickEdit=True,
+                cellEditorPopup=True
             )
 
     grid_options = gb.build()
