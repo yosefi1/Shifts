@@ -117,7 +117,8 @@ else:
     gb.configure_grid_options(
         domLayout='normal',
         suppressRowClickSelection=False,
-        stopEditingWhenCellsLoseFocus=True
+        stopEditingWhenCellsLoseFocus=True,
+        rowSelection='single'
     )
 
     for col in df.columns:
@@ -133,10 +134,12 @@ else:
             gb.configure_column(
                 col,
                 cellEditor='agSelectCellEditor',
-                cellEditorParams={"values": [""] + workers},
-                width=120,
+                cellEditorParams={"values": ["⬇ בחר"] + workers},
+                width=140,
                 wrapText=True,
-                autoHeight=True
+                autoHeight=True,
+                editable=True,
+                singleClickEdit=True
             )
 
     grid_options = gb.build()
