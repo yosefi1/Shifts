@@ -83,6 +83,9 @@ else:
         .ag-cell-focus {
             border: 1px solid #007bff !important;
         }
+        .ag-cell-inline-editing {
+            padding: 0 !important;
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -134,12 +137,14 @@ else:
             gb.configure_column(
                 col,
                 cellEditor='agSelectCellEditor',
-                cellEditorParams={"values": ["⬇ בחר"] + workers},
+                cellEditorParams={"values": workers},
                 width=140,
                 wrapText=True,
                 autoHeight=True,
                 editable=True,
-                singleClickEdit=True
+                singleClickEdit=True,
+                cellEditorPopup=True,
+                cellRenderer="agGroupCellRenderer"
             )
 
     grid_options = gb.build()
