@@ -77,9 +77,10 @@ else:
         }
         .ag-theme-streamlit .ag-cell {
             line-height: 1.6 !important;
+            border-right: 1px solid #ddd !important;
         }
-        .ag-theme-streamlit .ag-center-cols-container {
-            display: flex;
+        .ag-theme-streamlit .ag-row {
+            border-bottom: 1px solid #ddd !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -104,13 +105,6 @@ else:
 
     # --- הגדרות AGGRID ---
     gb = GridOptionsBuilder.from_dataframe(df)
-    # הוספת גבולות בין עמודות ושורות
-    grid_options_css = {
-        "getRowStyle": {"function": "params => ({ borderBottom: '1px solid #ccc' })"},
-        "getRowClass": "custom-row-class"
-    }
-    gb.configure_grid_options(**grid_options_css)
-
     gb.configure_default_column(editable=(role == 'admin'), resizable=True, wrapText=True, autoHeight=True)
     gb.configure_grid_options(domLayout='normal', suppressRowClickSelection=False)
 
@@ -135,7 +129,6 @@ else:
         theme="streamlit"
     )
 
-
     updated_df = grid_response['data']
 
     if role == 'admin' and st.button("💾 שמור שיבוצים"):
@@ -148,4 +141,3 @@ else:
                     edited_schedule.loc[index_key, 'name'] = row[col]
         edited_schedule.to_csv(SCHEDULE_FILE)
         st.success("השיבוצים נשמרו בהצלחה!")
-
