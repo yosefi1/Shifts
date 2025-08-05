@@ -220,4 +220,3 @@ else:
                     edited_schedule.loc[index_key, 'name'] = row[col]
         edited_schedule.to_csv(SCHEDULE_FILE)
         st.success("השיבוצים נשמרו בהצלחה!")
-
