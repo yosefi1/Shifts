@@ -134,7 +134,6 @@ else:
                 col,
                 cellEditor='agSelectCellEditor',
                 cellEditorParams={"values": [""] + workers},
-                cellRenderer='agGroupCellRenderer',
                 width=120,
                 wrapText=True,
                 autoHeight=True
