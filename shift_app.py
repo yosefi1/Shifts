@@ -80,6 +80,9 @@ else:
         .ag-select-cell-editor {
             width: 100% !important;
         }
+        .ag-cell-focus {
+            border: 1px solid #007bff !important;
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -108,11 +111,13 @@ else:
         resizable=True,
         wrapText=True,
         autoHeight=True,
-        singleClickEdit=True  # Enable single-click editing
+        singleClickEdit=True,  # Enable single-click editing
+        cellStyle={"textAlign": "center"}
     )
     gb.configure_grid_options(
         domLayout='normal',
-        suppressRowClickSelection=False
+        suppressRowClickSelection=False,
+        stopEditingWhenCellsLoseFocus=True  # Stop editing when clicking away
     )
 
     # Configure columns
@@ -131,6 +136,7 @@ else:
                 cellEditor='agSelectCellEditor',
                 cellEditorParams={"values": [""] + workers},  # Add empty option
                 cellEditorPopup=True,  # Show dropdown as popup
+                cellEditorPopupPos='under',  # Position popup under the cell
                 width=120,  # Fixed width for shift columns
                 wrapText=True,
                 autoHeight=True
@@ -161,6 +167,9 @@ else:
             },
             ".ag-select-cell-editor": {
                 "width": "100% !important",
+            },
+            ".ag-cell-focus": {
+                "border": "1px solid #007bff !important",
             }
         }
     )
@@ -177,4 +186,3 @@ else:
                     edited_schedule.loc[index_key, 'name'] = row[col]
         edited_schedule.to_csv(SCHEDULE_FILE)
         st.success("השיבוצים נשמרו בהצלחה!")
-        
