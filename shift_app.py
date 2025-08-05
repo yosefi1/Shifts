@@ -82,6 +82,9 @@ else:
         .ag-theme-streamlit .ag-cell {
             line-height: 1.6 !important;
         }
+        .ag-theme-streamlit .ag-center-cols-container {
+            display: flex;
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -106,7 +109,7 @@ else:
     # --- הגדרות AGGRID ---
     gb = GridOptionsBuilder.from_dataframe(df)
     gb.configure_default_column(editable=(role == 'admin'), resizable=True, wrapText=True, autoHeight=True)
-    gb.configure_grid_options(domLayout='autoHeight', suppressRowClickSelection=False)
+    gb.configure_grid_options(domLayout='normal', suppressRowClickSelection=False)
 
     # רוחב אוטומטי לעמודה ראשונה ולשאר העמודות לפי הכותרת
     for col in df.columns:
@@ -121,7 +124,7 @@ else:
         df,
         gridOptions=grid_options,
         update_mode=GridUpdateMode.VALUE_CHANGED,
-        fit_columns_on_grid_load=True,
+        fit_columns_on_grid_load=False,
         enable_enterprise_modules=False,
         height=None,
         reload_data=False,
