@@ -86,4 +86,4 @@ else:
 
     if role == 'admin' and st.button("💾 שמור שיבוצים"):
         edited_schedule.to_csv(SCHEDULE_FILE)
-        st.success("השיבוצים נשמרו בהצלח
+        st.success("השיבוצים נשמרו בהצלחה!")
