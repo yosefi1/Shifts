@@ -34,7 +34,7 @@ else:
     st.sidebar.success(f"שלום {name}")
 
     # טען עובדים ועמדות
-    workers_df = pd.read_csv("workers.csv", encoding='utf-8')
+    workers_df = pd.read_csv("workers.csv", encoding='utf-8-sig')
     positions_df = pd.read_csv("positions.csv", encoding='utf-8')
     workers = workers_df['name'].tolist()
     workers_gender = dict(zip(workers_df['name'], workers_df['gender']))
@@ -50,6 +50,23 @@ else:
                 for shift in SHIFT_TIMES:
                     index.append(f"{pos}__{day}__{shift}")
         schedule = pd.DataFrame(index=index, columns=['name'])
+
+    # --- עיצוב RTL ויישור ---
+    st.markdown("""
+        <style>
+        .row-widget.stSelectbox {
+            direction: rtl;
+            text-align: right;
+        }
+        .st-emotion-cache-1kyxreq {
+            direction: rtl;
+        }
+        div[data-testid="stMarkdownContainer"] {
+            direction: rtl;
+            text-align: right;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
     st.title("📅 טבלת שיבוצים שבועית")
 
