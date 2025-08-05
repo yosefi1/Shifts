@@ -1,0 +1,1 @@
+// Dummy JS - real component goes here
