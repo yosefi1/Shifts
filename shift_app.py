@@ -73,10 +73,14 @@ else:
                         # סינון לפי מין בעמדות סיור
                         if pos in patrol_positions:
                             male_workers = [w for w in workers if workers_gender.get(w) == 'זכר']
-                            index_val = male_workers.index(current) + 1 if current in male_workers else 0
+                            current_str = str(current).strip()
+                            index_val = male_workers.index(current_str) + 1 if current_str in male_workers else 0
+
                             selection = st.selectbox(label, [""] + male_workers, key=key, index=index_val)
                         else:
-                            index_val = workers.index(current) + 1 if current in workers else 0
+                            current_str = str(current).strip()
+                            index_val = workers.index(current_str) + 1 if current_str in workers else 0
+
                             selection = st.selectbox(label, [""] + workers, key=key, index=index_val)
                         edited_schedule.loc[key, 'name'] = selection
                     else:
@@ -85,3 +89,4 @@ else:
     if role == 'admin' and st.button("💾 שמור שיבוצים"):
         edited_schedule.to_csv(SCHEDULE_FILE)
         st.success("השיבוצים נשמרו בהצלחה!")
+
