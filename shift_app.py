@@ -104,6 +104,13 @@ else:
 
     # --- הגדרות AGGRID ---
     gb = GridOptionsBuilder.from_dataframe(df)
+    # הוספת גבולות בין עמודות ושורות
+    grid_options_css = {
+        "getRowStyle": {"function": "params => ({ borderBottom: '1px solid #ccc' })"},
+        "getRowClass": "custom-row-class"
+    }
+    gb.configure_grid_options(**grid_options_css)
+
     gb.configure_default_column(editable=(role == 'admin'), resizable=True, wrapText=True, autoHeight=True)
     gb.configure_grid_options(domLayout='normal', suppressRowClickSelection=False)
 
@@ -122,10 +129,12 @@ else:
         update_mode=GridUpdateMode.VALUE_CHANGED,
         fit_columns_on_grid_load=False,
         enable_enterprise_modules=False,
-        height=None,
+        allow_unsafe_jscode=True,
         reload_data=False,
+        height=600,
         theme="streamlit"
     )
+
 
     updated_df = grid_response['data']
 
@@ -139,3 +148,4 @@ else:
                     edited_schedule.loc[index_key, 'name'] = row[col]
         edited_schedule.to_csv(SCHEDULE_FILE)
         st.success("השיבוצים נשמרו בהצלחה!")
+
