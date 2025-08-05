@@ -1,5 +1,6 @@
 import streamlit as st
-from dropdown_component.dropdown_component import dropdown_component
+from dropdown_component import dropdown_component  ✅
+
 
 st.title("📋 טבלת שיבוצים - Dropdown Demo")
 
@@ -14,3 +15,4 @@ result = dropdown_component(data=data, columns=columns, workers=workers)
 if result:
     st.success("✅ טבלה עודכנה")
     st.write(result)
+
