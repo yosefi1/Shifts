@@ -55,12 +55,14 @@ else:
     
     selected_tab = st.selectbox("בחר תצוגה", tabs)
     
-    if selected_tab == "📅 שיבוץ": 
+    if selected_tab == "📅 צפייה בשיבוצים":
         show_schedule_tab(role)
     elif selected_tab == "🚫 סימון אילוצים":
         show_constraints_tab(username)
-    elif selected_tab == "👀 אילוצים": 
+    elif selected_tab == "👀 צפייה באילוצי עובדים":
         show_admin_constraints_view()
+
+
 
 
 
