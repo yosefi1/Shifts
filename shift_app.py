@@ -1,4 +1,7 @@
+import streamlit as st
 from aggrid_component import aggrid_component
+
+st.title("📅 מערכת שיבוצים")
 st.subheader("🔧 Test AG Grid Component")
 
 data = [
@@ -15,5 +18,3 @@ try:
         st.write(result)
 except Exception as e:
     st.error(f"Component error: {e}")
-
-
