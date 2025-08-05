@@ -106,18 +106,26 @@ else:
     # --- הגדרות AGGRID ---
     gb = GridOptionsBuilder.from_dataframe(df)
     gb.configure_default_column(editable=(role == 'admin'), resizable=True, wrapText=True, autoHeight=True)
-    gb.configure_grid_options(domLayout='normal', suppressRowClickSelection=False, singleClickEdit=True)
+    gb.configure_grid_options(
+        domLayout='normal', 
+        suppressRowClickSelection=False, 
+        singleClickEdit=True,
+        stopEditingWhenCellsLoseFocus=True
+    )
 
     # רוחב אוטומטי לעמודה ראשונה ולשאר העמודות לפי הכותרת
     for col in df.columns:
         if col == 'עמדה':
             gb.configure_column(col, autoSize=True, wrapText=True)
         else:
-            gb.configure_column(col, 
-                cellEditor='agSelectCellEditor', 
-                cellEditorParams={"values": workers, "cellEditorPopup": True}, 
-                autoSize=True, 
-                wrapText=True)
+            gb.configure_column(
+                col,
+                editable=(role == 'admin'),
+                cellEditor='agSelectCellEditor',
+                cellEditorParams={"values": workers},
+                autoSize=True,
+                wrapText=True
+            )
 
     grid_options = gb.build()
 
