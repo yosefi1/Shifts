@@ -4,7 +4,7 @@ import yaml
 from yaml.loader import SafeLoader
 import streamlit_authenticator as stauth
 import os
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, JsCode
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 
 # --- הגדרות ---
 SHIFT_TIMES = ["08:00-12:00", "12:00-20:00", "20:00-00:00"]
@@ -83,9 +83,6 @@ else:
         .ag-cell-focus {
             border: 1px solid #007bff !important;
         }
-        .ag-cell-inline-editing {
-            padding: 0 !important;
-        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -106,38 +103,6 @@ else:
         table_data.append(row)
 
     df = pd.DataFrame(table_data)
-
-    # --- JavaScript editor to force dropdown open ---
-    force_dropdown_editor = JsCode("""
-        class CustomSelectCellEditor {
-            init(params) {
-                this.eInput = document.createElement('select');
-                const values = params.values || [];
-                values.forEach(val => {
-                    const option = document.createElement('option');
-                    option.value = val;
-                    option.text = val;
-                    this.eInput.appendChild(option);
-                });
-                this.eInput.value = params.value;
-                setTimeout(() => this.eInput.focus());
-            }
-            getGui() {
-                return this.eInput;
-            }
-            afterGuiAttached() {
-                this.eInput.focus();
-                this.eInput.click();
-            }
-            getValue() {
-                return this.eInput.value;
-            }
-            destroy() {}
-            isPopup() {
-                return false;
-            }
-        }
-    """)
 
     # --- הגדרות AGGRID ---
     gb = GridOptionsBuilder.from_dataframe(df)
@@ -168,8 +133,9 @@ else:
         else:
             gb.configure_column(
                 col,
-                cellEditor=force_dropdown_editor,
-                cellEditorParams={"values": workers},
+                cellEditor='agSelectCellEditor',
+                cellEditorParams={"values": [""] + workers},
+                cellEditorPopup=True,
                 width=140,
                 wrapText=True,
                 autoHeight=True,
