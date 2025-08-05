@@ -54,39 +54,42 @@ else:
 
     # --- עיצוב RTL ויישור ---
     st.markdown("""
-        <style>
-        div[data-testid="stMarkdownContainer"] {
-            direction: rtl;
-            text-align: right;
-        }
-        .block-container {
-            padding: 0 1rem;
-        }
-        .ag-theme-streamlit .ag-header-cell-label {
-            white-space: normal !important;
-            text-align: center;
-        }
-        .ag-theme-streamlit .ag-cell, .ag-theme-streamlit .ag-header-cell {
-            border-right: 1px solid #ccc !important;
-            border-bottom: 1px solid #ccc !important;
-        }
-        .ag-theme-streamlit .ag-header {
-            font-weight: bold;
-        }
-        .css-1v0mbdj.e115fcil1 {
-            padding: 0;
-        }
-        .ag-root-wrapper {
-            width: 100% !important;
-        }
-        .ag-theme-streamlit .ag-cell {
-            line-height: 1.6 !important;
-        }
-        .ag-theme-streamlit .ag-center-cols-container {
-            display: flex;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    <style>
+    div[data-testid="stMarkdownContainer"] {
+        direction: rtl;
+        text-align: right;
+    }
+    .block-container {
+        padding: 0 1rem;
+    }
+    .ag-theme-streamlit .ag-header-cell-label {
+        white-space: normal !important;
+        text-align: center;
+    }
+    .ag-theme-streamlit .ag-cell,
+    .ag-theme-streamlit .ag-header-cell,
+    .ag-theme-streamlit .ag-cell-value {
+        border-right: 1px solid #ccc !important;
+        border-bottom: 1px solid #ccc !important;
+    }
+    .ag-theme-streamlit .ag-header {
+        font-weight: bold;
+    }
+    .css-1v0mbdj.e115fcil1 {
+        padding: 0;
+    }
+    .ag-root-wrapper {
+        width: 100% !important;
+    }
+    .ag-theme-streamlit .ag-cell {
+        line-height: 1.6 !important;
+    }
+    .ag-theme-streamlit .ag-center-cols-container {
+        display: flex;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 
     st.title("📅 טבלת שיבוצים שבועית")
 
@@ -143,3 +146,4 @@ else:
                     edited_schedule.loc[index_key, 'name'] = row[col]
         edited_schedule.to_csv(SCHEDULE_FILE)
         st.success("השיבוצים נשמרו בהצלחה!")
+
