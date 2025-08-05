@@ -1,10 +1,21 @@
 import streamlit as st
 import pandas as pd
 import os
-from utils.helpers import SHIFT_TIMES, DAYS
+from utils.helpers import DAYS
 
 CONSTRAINT_DIR = "constraints"
 
+# שעות משמרת מותאמות לכל יום
+CUSTOM_SHIFT_TIMES_PER_DAY = {
+    "ראשון": ["20:00-00:00"],
+    "שני": ["08:00-12:00", "12:00-20:00"],
+    "שלישי": ["08:00-12:00", "12:00-20:00"],
+    "רביעי": ["08:00-12:00", "12:00-20:00"],
+    "חמישי": ["08:00-12:00", "12:00-20:00"],
+    "שישי": ["08:00-12:00", "12:00-20:00"],
+    "שבת": ["08:00-12:00", "12:00-20:00"],
+    "ראשון שאחריו": ["08:00-12:00"]
+}
 
 def show_constraints_tab(username):
     st.subheader("🚫 סימון אילוצים לשבוע הבא")
@@ -13,27 +24,28 @@ def show_constraints_tab(username):
     constraint_file = os.path.join(CONSTRAINT_DIR, f"{username}_constraints.csv")
     note_file = os.path.join(CONSTRAINT_DIR, f"{username}_note.txt")
 
-    # Build grid of days x shifts
+    # יצירת טבלה
     data = []
-    for day in DAYS:
+    for day, shifts in CUSTOM_SHIFT_TIMES_PER_DAY.items():
         row = {"יום": day}
-        for shift in SHIFT_TIMES:
+        for shift in shifts:
             row[shift] = False
         data.append(row)
 
     df = pd.DataFrame(data)
 
-    # Load existing constraints
+    # טעינת אילוצים קיימים
     if os.path.exists(constraint_file):
         try:
             df_marked = pd.read_csv(constraint_file)
             for _, row in df_marked.iterrows():
                 day, shift = row["day"], row["shift"]
-                df.loc[df["יום"] == day, shift] = True
+                if day in df["יום"].values and shift in df.columns:
+                    df.loc[df["יום"] == day, shift] = True
         except Exception as e:
             st.error(f"שגיאה בטעינת אילוצים קודמים: {e}")
 
-    # Table editing
+    # טבלת סימון עם AgGrid
     from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 
     gb = GridOptionsBuilder.from_dataframe(df)
@@ -75,7 +87,7 @@ def show_constraints_tab(username):
 
     updated_df = grid_response['data']
 
-    # Note
+    # הערה
     st.markdown("### הערה למנהל (לא חובה):")
     note = ""
     if os.path.exists(note_file):
@@ -83,13 +95,13 @@ def show_constraints_tab(username):
             note = f.read()
     note_input = st.text_area("הקלד הערה", value=note)
 
-    # Save button
+    # כפתור שמירה
     if st.button("💾 שמור אילוצים"):
         blocked = []
         for idx, row in updated_df.iterrows():
             day = row["יום"]
-            for shift in SHIFT_TIMES:
-                if row[shift] == True:
+            for shift in CUSTOM_SHIFT_TIMES_PER_DAY.get(day, []):
+                if row.get(shift) == True:
                     blocked.append((day, shift))
 
         df_save = pd.DataFrame(blocked, columns=["day", "shift"])
