@@ -34,15 +34,13 @@ else:
     st.sidebar.success(f"שלום {name}")
 
     # טען עובדים ועמדות
-    workers_df = pd.read_csv("workers.csv")
-    positions_df = pd.read_csv("positions.csv")
+    workers_df = pd.read_csv("workers.csv", encoding='utf-8')
+    positions_df = pd.read_csv("positions.csv", encoding='utf-8')
     workers = workers_df['name'].tolist()
     workers_gender = dict(zip(workers_df['name'], workers_df['gender']))
 
-    # הגדרת עמדות סיור לזכרים בלבד
     patrol_positions = ["סיור 10", "סיור 10א"]
 
-    # טען או צור טבלת שיבוצים
     if os.path.exists(SCHEDULE_FILE):
         schedule = pd.read_csv(SCHEDULE_FILE, index_col=0)
     else:
@@ -56,16 +54,25 @@ else:
     st.title("📅 טבלת שיבוצים שבועית")
 
     role = config['credentials']['usernames'][username]['role']
-
     edited_schedule = schedule.copy()
     used_keys = set()
 
-    st.markdown("<style>th, td {text-align: center !important;} .st-emotion-cache-1kyxreq {direction: rtl;}</style>", unsafe_allow_html=True)
+    st.markdown("""
+        <style>
+        .rtl-table { direction: rtl; text-align: center; }
+        .shift-grid { display: grid; grid-template-columns: repeat(22, 1fr); gap: 5px; }
+        .shift-header { font-weight: bold; }
+        </style>
+    """, unsafe_allow_html=True)
 
-    table_rows = []
+    st.markdown("<div class='shift-grid rtl-table'>", unsafe_allow_html=True)
+    st.markdown("<div class='shift-header'>עמדה</div>", unsafe_allow_html=True)
+    for day in DAYS:
+        for shift in SHIFT_TIMES:
+            st.markdown(f"<div class='shift-header'>{day}<br>{shift}</div>", unsafe_allow_html=True)
+
     for pos in positions_df['position']:
-        row = []
-        row.append(pos)
+        st.markdown(f"<div><b>{pos}</b></div>", unsafe_allow_html=True)
         for day in DAYS:
             for shift in SHIFT_TIMES:
                 full_index = f"{pos}__{day}__{shift}"
@@ -83,19 +90,15 @@ else:
                     if pos in patrol_positions:
                         male_workers = [w for w in workers if workers_gender.get(w) == 'זכר']
                         index_val = male_workers.index(current_str) + 1 if current_str in male_workers else 0
-                        cell = st.selectbox("", [""] + male_workers, key=key, index=index_val)
+                        cell = st.selectbox("", [""] + male_workers, key=key, index=index_val, label_visibility="collapsed")
                     else:
                         index_val = workers.index(current_str) + 1 if current_str in workers else 0
-                        cell = st.selectbox("", [""] + workers, key=key, index=index_val)
+                        cell = st.selectbox("", [""] + workers, key=key, index=index_val, label_visibility="collapsed")
                     edited_schedule.loc[full_index, 'name'] = cell
-                    row.append(cell)
                 else:
-                    row.append(current_str if current_str else "-")
-        table_rows.append(row)
+                    st.markdown(f"<div>{current_str if current_str else '-'}</div>", unsafe_allow_html=True)
 
-    columns = ["עמדה"] + [f"{day}\n{shift}" for day in DAYS for shift in SHIFT_TIMES]
-    table_df = pd.DataFrame(table_rows, columns=columns)
-    st.dataframe(table_df, use_container_width=True, hide_index=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
     if role == 'admin' and st.button("💾 שמור שיבוצים"):
         edited_schedule.to_csv(SCHEDULE_FILE)
