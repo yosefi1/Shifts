@@ -126,8 +126,18 @@ else:
         allow_unsafe_jscode=True,
         reload_data=False,
         height=600,
-        theme="streamlit"
+        theme="streamlit",
+        custom_css={
+            ".ag-cell": {
+                "border-right": "1px solid #ccc !important",
+                "border-bottom": "1px solid #ccc !important",
+            },
+            ".ag-header-cell": {
+                "border-right": "1px solid #ccc !important",
+            }
+        }
     )
+
 
     updated_df = grid_response['data']
 
@@ -141,3 +151,4 @@ else:
                     edited_schedule.loc[index_key, 'name'] = row[col]
         edited_schedule.to_csv(SCHEDULE_FILE)
         st.success("השיבוצים נשמרו בהצלחה!")
+
