@@ -79,6 +79,9 @@ else:
         .ag-root-wrapper {
             width: 100% !important;
         }
+        .ag-theme-streamlit .ag-cell {
+            line-height: 1.6 !important;
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -104,15 +107,21 @@ else:
     gb = GridOptionsBuilder.from_dataframe(df)
     gb.configure_default_column(editable=(role == 'admin'), resizable=True, wrapText=True, autoHeight=True)
     gb.configure_grid_options(domLayout='autoHeight', suppressRowClickSelection=False)
-    gb.configure_columns(df.columns[1:], cellEditor='agSelectCellEditor', cellEditorParams={"values": workers}, autoSize=True)
-    gb.configure_column(df.columns[0], autoSize=True)
+
+    # רוחב אוטומטי לעמודה ראשונה ולשאר העמודות לפי הכותרת
+    for col in df.columns:
+        if col == 'עמדה':
+            gb.configure_column(col, autoSize=True, wrapText=True)
+        else:
+            gb.configure_column(col, cellEditor='agSelectCellEditor', cellEditorParams={"values": workers}, autoSize=True, wrapText=True)
+
     grid_options = gb.build()
 
     grid_response = AgGrid(
         df,
         gridOptions=grid_options,
         update_mode=GridUpdateMode.VALUE_CHANGED,
-        fit_columns_on_grid_load=False,
+        fit_columns_on_grid_load=True,
         enable_enterprise_modules=False,
         height=None,
         reload_data=False,
