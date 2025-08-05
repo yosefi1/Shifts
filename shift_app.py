@@ -111,33 +111,31 @@ else:
         resizable=True,
         wrapText=True,
         autoHeight=True,
-        singleClickEdit=True,  # Enable single-click editing
+        singleClickEdit=True,
         cellStyle={"textAlign": "center"}
     )
     gb.configure_grid_options(
         domLayout='normal',
         suppressRowClickSelection=False,
-        stopEditingWhenCellsLoseFocus=True  # Stop editing when clicking away
+        stopEditingWhenCellsLoseFocus=True
     )
 
-    # Configure columns
     for col in df.columns:
         if col == 'עמדה':
             gb.configure_column(
                 col,
-                width=150,  # Fixed width for position column
+                width=150,
                 wrapText=True,
                 autoHeight=True,
-                pinned='left'  # Pin to left for RTL
+                pinned='left'
             )
         else:
             gb.configure_column(
                 col,
                 cellEditor='agSelectCellEditor',
-                cellEditorParams={"values": [""] + workers},  # Add empty option
-                cellEditorPopup=True,  # Show dropdown as popup
-                cellEditorPopupPos='under',  # Position popup under the cell
-                width=120,  # Fixed width for shift columns
+                cellEditorParams={"values": [""] + workers},
+                cellRenderer='agGroupCellRenderer',
+                width=120,
                 wrapText=True,
                 autoHeight=True
             )
@@ -176,7 +174,7 @@ else:
 
     updated_df = grid_response['data']
 
-    if role == 'admin' and st.button("💾 שמור שיבוצים"):
+    if role == 'admin' and st.button("📅 שמור שיבוצים"):
         for idx, row in updated_df.iterrows():
             pos = row['עמדה']
             for day in DAYS:
@@ -186,4 +184,3 @@ else:
                     edited_schedule.loc[index_key, 'name'] = row[col]
         edited_schedule.to_csv(SCHEDULE_FILE)
         st.success("השיבוצים נשמרו בהצלחה!")
-
