@@ -76,6 +76,9 @@ else:
         .css-1v0mbdj.e115fcil1 {
             padding: 0;
         }
+        .ag-root-wrapper {
+            width: 100% !important;
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -102,7 +105,7 @@ else:
     gb.configure_default_column(editable=(role == 'admin'), resizable=True, wrapText=True, autoHeight=True)
     gb.configure_grid_options(domLayout='autoHeight', suppressRowClickSelection=False)
     gb.configure_columns(df.columns[1:], cellEditor='agSelectCellEditor', cellEditorParams={"values": workers}, autoSize=True)
-    gb.configure_columns(df.columns[0], autoSize=True)
+    gb.configure_column(df.columns[0], autoSize=True)
     grid_options = gb.build()
 
     grid_response = AgGrid(
