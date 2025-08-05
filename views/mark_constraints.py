@@ -6,6 +6,7 @@ from utils.helpers import SHIFT_TIMES, DAYS
 
 CONSTRAINT_DIR = "constraints"
 
+
 def show_constraints_tab(username):
     st.subheader("🚫 סימון אילוצים לשבוע הבא")
 
@@ -18,31 +19,40 @@ def show_constraints_tab(username):
     constraint_file = os.path.join(CONSTRAINT_DIR, f"{username}_constraints.csv")
     note_file = os.path.join(CONSTRAINT_DIR, f"{username}_note.txt")
 
-    if os.path.exists(constraint_file):
-        constraints_df = pd.read_csv(constraint_file)
-        marked = {(row['position'], row['day'], row['shift']) for _, row in constraints_df.iterrows()}
-    else:
-        marked = set()
-
-    # Create empty grid DataFrame
-    table_data = []
+    # Build empty table
+    data = []
     for pos in positions:
         row = {"עמדה": pos}
         for day in DAYS:
             for shift in SHIFT_TIMES:
-                key = f"{day} {shift}"
-                row[key] = "❌" if (pos, day, shift) in marked else ""
-        table_data.append(row)
+                col = f"{day} {shift}"
+                row[col] = False  # Default: not blocked
+        data.append(row)
 
-    df = pd.DataFrame(table_data)
+    df = pd.DataFrame(data)
 
-    # Grid config
+    # Load marked constraints if they exist
+    if os.path.exists(constraint_file):
+        try:
+            df_marked = pd.read_csv(constraint_file)
+            for _, row in df_marked.iterrows():
+                pos, day, shift = row["position"], row["day"], row["shift"]
+                col = f"{day} {shift}"
+                df.loc[df["עמדה"] == pos, col] = True
+        except Exception as e:
+            st.error(f"שגיאה בטעינת אילוצים קודמים: {e}")
+
+    # Table editing
     gb = GridOptionsBuilder.from_dataframe(df)
-    gb.configure_default_column(editable=True, wrapText=True, autoHeight=True)
+    gb.configure_default_column(resizable=True, wrapText=True, autoHeight=True)
+    gb.configure_grid_options(domLayout='normal')
+
     for col in df.columns:
-        gb.configure_column(col, width=110)
-    gb.configure_column("עמדה", pinned='left', editable=False, width=150)
-    gb.configure_grid_options(stopEditingWhenCellsLoseFocus=True)
+        if col == "עמדה":
+            gb.configure_column(col, editable=False, pinned='left', width=150)
+        else:
+            gb.configure_column(col, editable=True, cellEditor='agCheckboxCellEditor', width=120)
+
     grid_options = gb.build()
 
     grid_response = AgGrid(
@@ -50,14 +60,29 @@ def show_constraints_tab(username):
         gridOptions=grid_options,
         update_mode=GridUpdateMode.VALUE_CHANGED,
         fit_columns_on_grid_load=False,
-        allow_unsafe_jscode=True,
+        theme="streamlit",
         height=600,
-        theme="streamlit"
+        allow_unsafe_jscode=True,
+        custom_css={
+            ".ag-cell": {
+                "border-right": "1px solid #ccc !important",
+                "border-bottom": "1px solid #ccc !important",
+                "text-align": "center",
+            },
+            ".ag-header-cell": {
+                "border-right": "1px solid #ccc !important",
+                "background-color": "#f5f5f5",
+                "font-weight": "bold",
+            },
+            ".ag-cell-focus": {
+                "border": "1px solid #007bff !important",
+            }
+        }
     )
 
-    updated_df = grid_response["data"]
+    updated_df = grid_response['data']
 
-    # Note box
+    # Note
     st.markdown("### הערה למנהל (לא חובה):")
     note = ""
     if os.path.exists(note_file):
@@ -65,22 +90,19 @@ def show_constraints_tab(username):
             note = f.read()
     note_input = st.text_area("הקלד הערה", value=note)
 
-    # Save
+    # Save button
     if st.button("💾 שמור אילוצים"):
-        new_constraints = []
+        blocked_rows = []
         for idx, row in updated_df.iterrows():
             pos = row["עמדה"]
             for day in DAYS:
                 for shift in SHIFT_TIMES:
-                    key = f"{day} {shift}"
-                    if row.get(key) == "❌":
-                        new_constraints.append((pos, day, shift))
+                    col = f"{day} {shift}"
+                    if row[col] == True:
+                        blocked_rows.append((pos, day, shift))
 
-        df_to_save = pd.DataFrame(new_constraints, columns=["position", "day", "shift"])
-        df_to_save["blocked"] = "❌"
-        df_to_save.to_csv(constraint_file, index=False, encoding='utf-8-sig')
-
+        df_save = pd.DataFrame(blocked_rows, columns=["position", "day", "shift"])
+        df_save.to_csv(constraint_file, index=False, encoding='utf-8-sig')
         with open(note_file, "w", encoding='utf-8') as f:
             f.write(note_input)
-
         st.success("האילוצים נשמרו בהצלחה!")
