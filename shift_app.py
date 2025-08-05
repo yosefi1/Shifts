@@ -134,12 +134,12 @@ else:
             gb.configure_column(
                 col,
                 cellEditor='agSelectCellEditor',
-                cellEditorParams={"values": [""] + workers},
-                cellEditorPopup=True,
+                cellEditorParams={"values": ["⬇ בחר"] + workers},
                 width=140,
                 wrapText=True,
                 autoHeight=True,
-                editable=True
+                editable=True,
+                singleClickEdit=True
             )
 
     grid_options = gb.build()
@@ -186,3 +186,4 @@ else:
                     edited_schedule.loc[index_key, 'name'] = row[col]
         edited_schedule.to_csv(SCHEDULE_FILE)
         st.success("השיבוצים נשמרו בהצלחה!")
+
