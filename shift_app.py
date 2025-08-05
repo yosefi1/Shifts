@@ -77,6 +77,9 @@ else:
         .ag-root-wrapper {
             width: 100% !important;
         }
+        .ag-select-cell-editor {
+            width: 100% !important;
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -120,14 +123,15 @@ else:
                 width=150,  # Fixed width for position column
                 wrapText=True,
                 autoHeight=True,
-                pinned='right'  # Pin position column for better visibility
+                pinned='left'  # Pin to left for RTL
             )
         else:
             gb.configure_column(
                 col,
                 cellEditor='agSelectCellEditor',
-                cellEditorParams={"values": [""] + workers},  # Add empty option for clearing
-                width=120,  # Slightly wider for readability
+                cellEditorParams={"values": [""] + workers},  # Add empty option
+                cellEditorPopup=True,  # Show dropdown as popup
+                width=120,  # Fixed width for shift columns
                 wrapText=True,
                 autoHeight=True
             )
@@ -154,6 +158,9 @@ else:
                 "border-right": "1px solid #ccc !important",
                 "background-color": "#f5f5f5",
                 "font-weight": "bold",
+            },
+            ".ag-select-cell-editor": {
+                "width": "100% !important",
             }
         }
     )
@@ -170,3 +177,4 @@ else:
                     edited_schedule.loc[index_key, 'name'] = row[col]
         edited_schedule.to_csv(SCHEDULE_FILE)
         st.success("השיבוצים נשמרו בהצלחה!")
+        
