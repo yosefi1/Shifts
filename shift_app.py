@@ -75,12 +75,12 @@ else:
                             male_workers = [w for w in workers if workers_gender.get(w) == 'זכר']
                             selection = st.selectbox(label, [""] + male_workers, key=key, index=[""] + male_workers.index(current) if current in male_workers else 0)
                         else:
-                            selection = st.selectbox(label, [""] + workers, key=key, if current in workers:
-    index_val = workers.index(current) + 1  # +1 בגלל שהוספנו "" בתחילת הרשימה
-else:
-    index_val = 0
-selection = st.selectbox(label, [\"\"] + workers, key=key, index=index_val)
-)
+                            selection = st.selectbox(label, [""] + workers, key=key, 
+                                                     if current in workers:
+                                                        index_val = workers.index(current) + 1  # +1 בגלל שהוספנו "" בתחילת הרשימה
+                                                    else:
+                                                        index_val = 0
+                                                        selection = st.selectbox(label, [\"\"] + workers, key=key, index=index_val))
                         edited_schedule.loc[key, 'name'] = selection
                     else:
                         st.markdown(f"**{label}:** {current if current else '-'}")
@@ -88,4 +88,5 @@ selection = st.selectbox(label, [\"\"] + workers, key=key, index=index_val)
     if role == 'admin' and st.button("💾 שמור שיבוצים"):
         edited_schedule.to_csv(SCHEDULE_FILE)
         st.success("השיבוצים נשמרו בהצלחה!")
+
 
