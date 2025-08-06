@@ -52,14 +52,23 @@ def show_constraints_tab(username):
     for col in df.columns:
         if col == "יום":
             gb.configure_column(col, editable=False, pinned='left', width=150)
-        else:
+        elif col in SHIFT_TIMES:
             gb.configure_column(
                 col,
                 editable=True,
                 cellEditor='agCheckboxCellEditor',
-                cellRenderer='(params.value === null) ? "" : undefined',
+                cellStyle='''
+                    function(params) {
+                        if ((params.rowIndex === 0 && params.colDef.field === "08:00-12:00") ||
+                            (params.rowIndex === 7 && params.colDef.field === "20:00-00:00")) {
+                            return { "pointerEvents": "none", "backgroundColor": "#eee" };
+                        }
+                        return {};
+                    }
+                ''',
                 width=140
             )
+
 
     grid_options = gb.build()
 
