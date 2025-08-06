@@ -51,6 +51,9 @@ def show_constraints_tab(username):
         if col == "יום":
             gb.configure_column(col, editable=False, pinned='left', width=150)
         elif col in SHIFT_TIMES:
+            # נבדוק האם העמודה כוללת תא חסום
+            is_column_with_disabled = any((row_idx, col) in DISABLED_CELLS for row_idx in range(len(DAYS)))
+            
             gb.configure_column(
                 col,
                 editable=True,
@@ -72,6 +75,7 @@ def show_constraints_tab(username):
                 """,
                 width=140
             )
+
 
     grid_options = gb.build()
 
