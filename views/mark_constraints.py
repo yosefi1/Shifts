@@ -51,15 +51,41 @@ def show_constraints_tab(username):
     gb.configure_grid_options(domLayout='normal')
 
     for col in df.columns:
-        if col == "יום":
-            gb.configure_column(col, editable=False, pinned='left', width=150)
-        else:
+    if col == "יום":
+        gb.configure_column(col, editable=False, pinned='left', width=150)
+    else:
+        # ננעל שדות לא ניתנים לעריכה לפי תנאים
+        if col == "08:00-12:00":
             gb.configure_column(
-            col,
-            editable=True,
-            cellEditor='agCheckboxCellEditor',
-            width=140
-        )
+                col,
+                editable=True,
+                cellEditor='agCheckboxCellEditor',
+                cellStyle="""
+                    function(params) {
+                        if (params.data["יום"] === "ראשון" && params.node.rowIndex === 0) {
+                            return { backgroundColor: '#f0f0f0', pointerEvents: 'none' };
+                        }
+                        return {};
+                    }
+                """,
+                width=140
+            )
+        elif col == "20:00-00:00":
+            gb.configure_column(
+                col,
+                editable=True,
+                cellEditor='agCheckboxCellEditor',
+                cellStyle="""
+                    function(params) {
+                        if (params.data["יום"] === "ראשון" && params.node.rowIndex === 7) {
+                            return { backgroundColor: '#f0f0f0', pointerEvents: 'none' };
+                        }
+                        return {};
+                    }
+                """,
+                width=140
+            )
+
 
 
     grid_options = gb.build()
