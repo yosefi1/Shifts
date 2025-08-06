@@ -53,24 +53,45 @@ def show_constraints_tab(username):
             gb.configure_column(col, editable=False, pinned='left', width=150)
         elif col in SHIFT_TIMES:
             gb.configure_column(
-                col,
-                editable=True,
-                cellEditor='agCheckboxCellEditor',
-                cellRenderer="""function(params) {
-                    const disabledCells = [
-                        [0, "08:00-12:00"],
-                        [7, "20:00-00:00"]
-                    ];
-                    const isDisabled = disabledCells.some(
-                        ([row, shift]) => row === params.rowIndex && shift === params.colDef.field
-                    );
-                    if (isDisabled) {
-                        return '';  // לא להציג כלום
-                    }
-                    return `<input type="checkbox" ${params.value ? "checked" : ""} disabled>`;
-                }""",
-                width=140
-            )
+            col,
+            editable=True,
+            cellEditor='agCheckboxCellEditor',
+            cellRendererJsCode=f"""
+            function(params) {{
+                const disabledCells = [
+                    [0, "08:00-12:00"],
+                    [7, "20:00-00:00"]
+                ];
+                const isDisabled = disabledCells.some(
+                    ([row, shift]) => row === params.rowIndex && shift === params.colDef.field
+                );
+                if (isDisabled) {{
+                    return '';  // תא ריק במקום checkbox
+                }}
+                return params.value ? '✔️' : '';  // הצג סימון וי פשוט
+            }}
+            """,
+            width=140
+        )
+        
+                        col,
+                        editable=True,
+                        cellEditor='agCheckboxCellEditor',
+                        cellRenderer="""function(params) {
+                            const disabledCells = [
+                                [0, "08:00-12:00"],
+                                [7, "20:00-00:00"]
+                            ];
+                            const isDisabled = disabledCells.some(
+                                ([row, shift]) => row === params.rowIndex && shift === params.colDef.field
+                            );
+                            if (isDisabled) {
+                                return '';  // לא להציג כלום
+                            }
+                            return `<input type="checkbox" ${params.value ? "checked" : ""} disabled>`;
+                        }""",
+                        width=140
+                    )
 
 
     grid_options = gb.build()
