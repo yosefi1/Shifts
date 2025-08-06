@@ -5,6 +5,10 @@ from utils.helpers import SHIFT_TIMES, DAYS
 
 CONSTRAINT_DIR = "constraints"
 
+# עדכון קבועים לשימוש פה בלבד
+DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת", "ראשון"]
+SHIFT_TIMES = ["08-12", "20-00"]
+
 
 def show_constraints_tab(username):
     st.subheader("🚫 סימון אילוצים לשבוע הבא")
@@ -15,13 +19,18 @@ def show_constraints_tab(username):
 
     # Build grid of days x shifts
     data = []
-    for day in DAYS:
+    for i, day in enumerate(DAYS):
         row = {"יום": day}
         for shift in SHIFT_TIMES:
+            # הגדר ברירת מחדל: False
             row[shift] = False
         data.append(row)
 
     df = pd.DataFrame(data)
+
+    # ביטול סימון בראשון הראשון והאחרון
+    df.loc[df.index == 0, "08-12"] = None   # ראשון ראשון
+    df.loc[df.index == len(df)-1, "20-00"] = None  # ראשון אחרון
 
     # Load existing constraints
     if os.path.exists(constraint_file):
@@ -29,7 +38,9 @@ def show_constraints_tab(username):
             df_marked = pd.read_csv(constraint_file)
             for _, row in df_marked.iterrows():
                 day, shift = row["day"], row["shift"]
-                df.loc[df["יום"] == day, shift] = True
+                # תא שאינו None ניתן לסימון
+                if shift in df.columns and not pd.isna(df.loc[df["יום"] == day, shift]).all():
+                    df.loc[df["יום"] == day, shift] = True
         except Exception as e:
             st.error(f"שגיאה בטעינת אילוצים קודמים: {e}")
 
@@ -44,7 +55,13 @@ def show_constraints_tab(username):
         if col == "יום":
             gb.configure_column(col, editable=False, pinned='left', width=150)
         else:
-            gb.configure_column(col, editable=True, cellEditor='agCheckboxCellEditor', width=140)
+            gb.configure_column(
+                col,
+                editable=True,
+                cellEditor='agCheckboxCellEditor',
+                cellRenderer='(params.value === null) ? "" : params.value',
+                width=140
+            )
 
     grid_options = gb.build()
 
@@ -89,7 +106,7 @@ def show_constraints_tab(username):
         for idx, row in updated_df.iterrows():
             day = row["יום"]
             for shift in SHIFT_TIMES:
-                if row[shift] == True:
+                if shift in row and row[shift] == True:
                     blocked.append((day, shift))
 
         df_save = pd.DataFrame(blocked, columns=["day", "shift"])
