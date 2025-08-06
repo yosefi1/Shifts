@@ -56,12 +56,13 @@ def show_constraints_tab(username):
             gb.configure_column(col, editable=False, pinned='left', width=150)
         else:
             gb.configure_column(
-                col,
-                editable=True,
-                cellEditor='agCheckboxCellEditor',
-                cellRenderer='(params.value === true) ? "✔️" : (params.value === false ? "" : "")',
-                width=140
-            )
+            col,
+            editable=True,
+            cellEditor='agCheckboxCellEditor',
+            cellRenderer='(params.value === true || params.value === false) ? `<input type="checkbox" ${params.value ? "checked" : ""} disabled>` : ""',
+            width=140
+        )
+
 
 
 
