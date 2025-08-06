@@ -56,8 +56,22 @@ def show_constraints_tab(username):
                 col,
                 editable=True,
                 cellEditor='agCheckboxCellEditor',
+                cellRenderer="""function(params) {
+                    const disabledCells = [
+                        [0, "08:00-12:00"],
+                        [7, "20:00-00:00"]
+                    ];
+                    const isDisabled = disabledCells.some(
+                        ([row, shift]) => row === params.rowIndex && shift === params.colDef.field
+                    );
+                    if (isDisabled) {
+                        return '';  // לא להציג כלום
+                    }
+                    return `<input type="checkbox" ${params.value ? "checked" : ""} disabled>`;
+                }""",
                 width=140
             )
+
 
     grid_options = gb.build()
 
