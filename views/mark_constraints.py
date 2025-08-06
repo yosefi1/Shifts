@@ -7,12 +7,11 @@ from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 
 CONSTRAINT_DIR = "constraints"
 
-# נחליף ידנית את הקבועים כאן לפי הדרישות
 DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת", "ראשון"]
 SHIFT_TIMES = ["08:00-12:00", "20:00-00:00"]
 DISABLED_CELLS = {
     (0, "08:00-12:00"),   # ראשון ראשון בוקר
-    (7, "20:00-00:00")    # ראשון אחרון ערב
+    (7, "20:00-00:00")    # ראשון שני (שבוע הבא) ערב
 }
 
 def show_constraints_tab(username):
@@ -43,7 +42,7 @@ def show_constraints_tab(username):
         except Exception as e:
             st.error(f"שגיאה בטעינת אילוצים קודמים: {e}")
 
-    # בניית הגדרות AGGrid
+    # הגדרות AGGrid
     gb = GridOptionsBuilder.from_dataframe(df)
     gb.configure_default_column(resizable=True, wrapText=True, autoHeight=True)
     gb.configure_grid_options(domLayout='normal')
@@ -51,13 +50,8 @@ def show_constraints_tab(username):
     for col in df.columns:
         if col == "יום":
             gb.configure_column(col, editable=False, pinned='left', width=150)
-        elif col in SHIFT_TIMES:
-            gb.configure_column(
-                col,
-                editable=True,
-                cellEditor='agCheckboxCellEditor',
-                width=140
-            )
+        else:
+            gb.configure_column(col, editable=True, cellEditor='agCheckboxCellEditor', width=140)
 
     grid_options = gb.build()
 
@@ -82,15 +76,19 @@ def show_constraints_tab(username):
             },
             ".ag-cell-focus": {
                 "border": "1px solid #007bff !important",
+            },
+            ".ag-cell-disabled": {
+                "background-color": "#f0f0f0 !important",
+                "pointer-events": "none !important"
             }
         }
     )
 
     updated_df = grid_response['data']
 
-    # ביטול הערכים בתאים שלא אמורים להיות ניתנים לסימון
+    # ביטול ערכים בתאים חסומים
     for row_idx, col in DISABLED_CELLS:
-        updated_df.at[row_idx, col] = False  # וגם אם שונה – נבטל
+        updated_df.at[row_idx, col] = False
 
     # הערה למנהל
     st.markdown("### הערה למנהל (לא חובה):")
@@ -107,7 +105,7 @@ def show_constraints_tab(username):
             day = row["יום"]
             for shift in SHIFT_TIMES:
                 if (idx, shift) in DISABLED_CELLS:
-                    continue  # דלג על שדות חסומים
+                    continue
                 if row[shift] == True:
                     blocked.append((day, shift))
 
@@ -118,3 +116,29 @@ def show_constraints_tab(username):
             f.write(note_input)
 
         st.success("האילוצים נשמרו בהצלחה!")
+
+    # 🪄 הוספת JS כדי להפוך את התאים ל"נעולים" גם ויזואלית
+    js = """
+    <script>
+    setTimeout(() => {
+      const grid = window.document.querySelectorAll('.ag-center-cols-container .ag-row');
+      if (!grid) return;
+
+      const disabledCells = [
+        {row: 0, col: 1},  // ראשון ראשון בוקר
+        {row: 7, col: 2}   // ראשון שני ערב
+      ];
+
+      disabledCells.forEach(cell => {
+        const row = grid[cell.row];
+        if (row) {
+          const cellEl = row.querySelectorAll('.ag-cell')[cell.col];
+          if (cellEl) {
+            cellEl.classList.add("ag-cell-disabled");
+          }
+        }
+      });
+    }, 100);
+    </script>
+    """
+    st.components.v1.html(js, height=0)
