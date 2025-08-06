@@ -2,18 +2,16 @@ import streamlit as st
 import pandas as pd
 import os
 from utils.helpers import SHIFT_TIMES, DAYS
-
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 
 CONSTRAINT_DIR = "constraints"
 
+# ימי השבוע ומשמרות
 DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת", "ראשון"]
 SHIFT_TIMES = ["08:00-12:00", "20:00-00:00"]
-
-# תאים חסומים
 DISABLED_CELLS = {
     (0, "08:00-12:00"),   # ראשון ראשון בוקר
-    (7, "20:00-00:00")    # ראשון אחרון ערב
+    (7, "20:00-00:00")    # ראשון שני ערב
 }
 
 def show_constraints_tab(username):
@@ -23,28 +21,29 @@ def show_constraints_tab(username):
     constraint_file = os.path.join(CONSTRAINT_DIR, f"{username}_constraints.csv")
     note_file = os.path.join(CONSTRAINT_DIR, f"{username}_note.txt")
 
-    # יצירת טבלה עם False בכל תא, חוץ מחסומים
+    # בניית הטבלה תוך דילוג על תאים חסומים
     data = []
     for i, day in enumerate(DAYS):
         row = {"יום": day}
         for shift in SHIFT_TIMES:
-            row[shift] = None if (i, shift) in DISABLED_CELLS else False
+            if (i, shift) not in DISABLED_CELLS:
+                row[shift] = False
         data.append(row)
 
     df = pd.DataFrame(data)
 
-    # טעינת אילוצים קיימים (רק איפה שמותר)
+    # טעינת אילוצים קודמים רק לתאים שמופיעים בטבלה
     if os.path.exists(constraint_file):
         try:
             df_marked = pd.read_csv(constraint_file)
             for _, row in df_marked.iterrows():
                 day, shift = row["day"], row["shift"]
-                mask = (df["יום"] == day) & (df[shift].notna())
-                df.loc[mask, shift] = True
+                if shift in df.columns and day in df["יום"].values:
+                    df.loc[df["יום"] == day, shift] = True
         except Exception as e:
             st.error(f"שגיאה בטעינת אילוצים קודמים: {e}")
 
-    # הגדרת AGGrid
+    # AGGrid builder
     gb = GridOptionsBuilder.from_dataframe(df)
     gb.configure_default_column(resizable=True, wrapText=True, autoHeight=True)
     gb.configure_grid_options(domLayout='normal')
@@ -52,23 +51,8 @@ def show_constraints_tab(username):
     for col in df.columns:
         if col == "יום":
             gb.configure_column(col, editable=False, pinned='left', width=150)
-        elif col in SHIFT_TIMES:
-            gb.configure_column(
-                col,
-                editable=True,
-                cellEditor='agCheckboxCellEditor',
-                cellStyle='''
-                    function(params) {
-                        if ((params.rowIndex === 0 && params.colDef.field === "08:00-12:00") ||
-                            (params.rowIndex === 7 && params.colDef.field === "20:00-00:00")) {
-                            return { "pointerEvents": "none", "backgroundColor": "#eee" };
-                        }
-                        return {};
-                    }
-                ''',
-                width=140
-            )
-
+        else:
+            gb.configure_column(col, editable=True, cellEditor='agCheckboxCellEditor', width=140)
 
     grid_options = gb.build()
 
@@ -107,13 +91,13 @@ def show_constraints_tab(username):
             note = f.read()
     note_input = st.text_area("הקלד הערה", value=note)
 
-    # שמירה
+    # כפתור שמירה
     if st.button("💾 שמור אילוצים"):
         blocked = []
         for idx, row in updated_df.iterrows():
             day = row["יום"]
             for shift in SHIFT_TIMES:
-                if shift in row and row[shift] is True:
+                if shift in row and row[shift] == True:
                     blocked.append((day, shift))
 
         df_save = pd.DataFrame(blocked, columns=["day", "shift"])
