@@ -1,17 +1,15 @@
 import streamlit as st
 import pandas as pd
 import os
-from utils.helpers import SHIFT_TIMES, DAYS
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 
 CONSTRAINT_DIR = "constraints"
 
-# ימי השבוע ומשמרות
 DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת", "ראשון"]
 SHIFT_TIMES = ["08:00-12:00", "20:00-00:00"]
 DISABLED_CELLS = {
-    (0, "08:00-12:00"),   # ראשון ראשון בוקר
-    (7, "20:00-00:00")    # ראשון שני ערב
+    (0, "08:00-12:00"),
+    (7, "20:00-00:00")
 }
 
 def show_constraints_tab(username):
@@ -21,37 +19,32 @@ def show_constraints_tab(username):
     constraint_file = os.path.join(CONSTRAINT_DIR, f"{username}_constraints.csv")
     note_file = os.path.join(CONSTRAINT_DIR, f"{username}_note.txt")
 
-    # בניית הטבלה תוך דילוג על תאים חסומים
+    # יצירת הטבלה
     data = []
     for i, day in enumerate(DAYS):
         row = {"יום": day}
         for shift in SHIFT_TIMES:
-            if (i, shift) not in DISABLED_CELLS:
-                row[shift] = False
+            row[shift] = None if (i, shift) in DISABLED_CELLS else False
         data.append(row)
-
     df = pd.DataFrame(data)
 
-    # טעינת אילוצים קודמים רק לתאים שמופיעים בטבלה
+    # טעינת אילוצים קודמים תוך דילוג על תאים חסומים
     if os.path.exists(constraint_file):
         try:
             df_marked = pd.read_csv(constraint_file)
             for _, row in df_marked.iterrows():
                 day, shift = row["day"], row["shift"]
-                # נזהה את אינדקס השורה לפי היום
-                row_index = df.index[df["יום"] == day].tolist()
-                if not row_index:
+                i = df.index[df["יום"] == day].tolist()
+                if not i:
                     continue
-                i = row_index[0]
-                if (i, shift) in DISABLED_CELLS:
-                    continue  # לא לטעון תאים חסומים
+                if (i[0], shift) in DISABLED_CELLS:
+                    continue
                 if shift in df.columns:
                     df.loc[df["יום"] == day, shift] = True
         except Exception as e:
             st.error(f"שגיאה בטעינת אילוצים קודמים: {e}")
 
-
-    # AGGrid builder
+    # הגדרת AGGrid
     gb = GridOptionsBuilder.from_dataframe(df)
     gb.configure_default_column(resizable=True, wrapText=True, autoHeight=True)
     gb.configure_grid_options(domLayout='normal')
@@ -60,7 +53,13 @@ def show_constraints_tab(username):
         if col == "יום":
             gb.configure_column(col, editable=False, pinned='left', width=150)
         else:
-            gb.configure_column(col, editable=True, cellEditor='agCheckboxCellEditor', width=140)
+            gb.configure_column(
+                col,
+                editable=True,
+                cellEditor='agCheckboxCellEditor',
+                cellRenderer='(params.value === null) ? "" : undefined',
+                width=140
+            )
 
     grid_options = gb.build()
 
@@ -105,7 +104,9 @@ def show_constraints_tab(username):
         for idx, row in updated_df.iterrows():
             day = row["יום"]
             for shift in SHIFT_TIMES:
-                if shift in row and row[shift] == True:
+                if (idx, shift) in DISABLED_CELLS:
+                    continue
+                if shift in row and row[shift] is True:
                     blocked.append((day, shift))
 
         df_save = pd.DataFrame(blocked, columns=["day", "shift"])
