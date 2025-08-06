@@ -52,7 +52,7 @@ def show_constraints_tab(username):
         elif col in SHIFT_TIMES:
             gb.configure_column(
                 col,
-                editable=True,
+                editable=True,  # Default to editable
                 width=140,
                 cellEditor='agCheckboxCellEditor',
                 cellEditorParams={
@@ -78,15 +78,37 @@ def show_constraints_tab(username):
                         const isDisabled = disabledCells.some(
                             ([row, shift]) => row === params.rowIndex && shift === params.colDef.field
                         );
-                        if (isDisabled || !params.value) {
+                        if (isDisabled) {
                             return '';
                         }
-                        return '✔️';
+                        return params.value ? '<input type="checkbox" checked disabled>' : '<input type="checkbox" disabled>';
                     }
                 """
             )
 
     grid_options = gb.build()
+
+    # Explicitly set editable property for each cell
+    grid_options['columnDefs'] = [
+        {
+            **col_def,
+            'editable': {
+                "function": """
+                    function(params) {
+                        const disabledCells = [
+                            [0, '08:00-12:00'],
+                            [7, '20:00-00:00']
+                        ];
+                        const isDisabled = disabledCells.some(
+                            ([row, shift]) => row === params.rowIndex && shift === params.colDef.field
+                        );
+                        return !isDisabled;
+                    }
+                """
+            } if col_def['field'] in SHIFT_TIMES else col_def['editable']
+        }
+        for col_def in grid_options['columnDefs']
+    ]
 
     grid_response = AgGrid(
         df,
@@ -109,6 +131,9 @@ def show_constraints_tab(username):
             },
             ".ag-cell-focus": {
                 "border": "1px solid #007bff !important",
+            },
+            ".ag-checkbox-input-wrapper": {
+                "cursor": "pointer"
             }
         }
     )
@@ -147,3 +172,4 @@ def show_constraints_tab(username):
         st.success("האילוצים נשמרו בהצלחה!")
         st.write("📄 נשמר בנתיב:", constraint_file)
         st.write("🔍 קיים קובץ?", os.path.exists(constraint_file))
+        
