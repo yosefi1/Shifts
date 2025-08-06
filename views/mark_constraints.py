@@ -7,7 +7,7 @@ CONSTRAINT_DIR = "constraints"
 
 # עדכון קבועים לשימוש פה בלבד
 DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת", "ראשון"]
-SHIFT_TIMES = ["08-12", "20-00"]
+SHIFT_TIMES = ["08:00-12:00", "20:00-00:00"]
 
 
 def show_constraints_tab(username):
