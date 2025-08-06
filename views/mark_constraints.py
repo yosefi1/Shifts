@@ -52,31 +52,33 @@ def show_constraints_tab(username):
                 col,
                 editable=True,
                 cellEditor='agCheckboxCellEditor',
-                cellStyle="""
+                cellStyle='''
                     function(params) {
                         if (params.node.rowIndex === 0) {
-                            return { backgroundColor: '#f0f0f0', pointerEvents: 'none' };
+                            return { "backgroundColor": "#f0f0f0", "pointerEvents": "none" };
                         }
                         return {};
                     }
-                """,
+                ''',
                 width=140
             )
+
         elif col == "20:00-00:00":
             gb.configure_column(
                 col,
                 editable=True,
                 cellEditor='agCheckboxCellEditor',
-                cellStyle="""
+                cellStyle='''
                     function(params) {
                         if (params.node.rowIndex === 7) {
-                            return { backgroundColor: '#f0f0f0', pointerEvents: 'none' };
+                            return { "backgroundColor": "#f0f0f0", "pointerEvents": "none" };
                         }
                         return {};
                     }
-                """,
+                ''',
                 width=140
             )
+
 
     grid_options = gb.build()
 
