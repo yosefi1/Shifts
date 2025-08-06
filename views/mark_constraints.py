@@ -7,7 +7,7 @@ from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 
 CONSTRAINT_DIR = "constraints"
 
-# --- החלפה ידנית של קבועים לקובץ זה בלבד
+# נחליף ידנית את הקבועים כאן לפי הדרישות
 DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת", "ראשון"]
 SHIFT_TIMES = ["08:00-12:00", "20:00-00:00"]
 
@@ -18,7 +18,7 @@ def show_constraints_tab(username):
     constraint_file = os.path.join(CONSTRAINT_DIR, f"{username}_constraints.csv")
     note_file = os.path.join(CONSTRAINT_DIR, f"{username}_note.txt")
 
-    # יצירת טבלה ראשונית
+    # Build grid of days x shifts
     data = []
     for day in DAYS:
         row = {"יום": day}
@@ -28,32 +28,42 @@ def show_constraints_tab(username):
 
     df = pd.DataFrame(data)
 
-    # טעינת אילוצים קיימים
+    # Load existing constraints
     if os.path.exists(constraint_file):
         try:
             df_marked = pd.read_csv(constraint_file)
             for _, row in df_marked.iterrows():
                 day, shift = row["day"], row["shift"]
-                if shift in df.columns and day in df["יום"].values:
-                    df.loc[df["יום"] == day, shift] = True
+                df.loc[df["יום"] == day, shift] = True
         except Exception as e:
             st.error(f"שגיאה בטעינת אילוצים קודמים: {e}")
 
-    # הגדרת AGGrid
+    # Table editing
     gb = GridOptionsBuilder.from_dataframe(df)
     gb.configure_default_column(resizable=True, wrapText=True, autoHeight=True)
     gb.configure_grid_options(domLayout='normal')
 
-    for row_index, row in df.iterrows():
     for col in df.columns:
         if col == "יום":
             gb.configure_column(col, editable=False, pinned='left', width=150)
-        elif (col == "08:00-12:00" and row_index == 0) or (col == "20:00-00:00" and row_index == 7):
-            gb.configure_column(col, editable=False, cellEditor='agCheckboxCellEditor', width=140)
+        elif col == "08:00-12:00":
+            gb.configure_column(
+                col,
+                editable=True,
+                cellEditor='agCheckboxCellEditor',
+                cellRenderer='(params.node.rowIndex === 0) ? "" : undefined',
+                width=140
+            )
+        elif col == "20:00-00:00":
+            gb.configure_column(
+                col,
+                editable=True,
+                cellEditor='agCheckboxCellEditor',
+                cellRenderer='(params.node.rowIndex === 7) ? "" : undefined',
+                width=140
+            )
         else:
             gb.configure_column(col, editable=True, cellEditor='agCheckboxCellEditor', width=140)
-    break  # נצא מהלולאה אחרי סיבוב אחד – כי configure_column מתבצע פעם אחת לכל עמודה
-
 
     grid_options = gb.build()
 
@@ -84,7 +94,7 @@ def show_constraints_tab(username):
 
     updated_df = grid_response['data']
 
-    # הערה למנהל
+    # Note
     st.markdown("### הערה למנהל (לא חובה):")
     note = ""
     if os.path.exists(note_file):
@@ -92,13 +102,13 @@ def show_constraints_tab(username):
             note = f.read()
     note_input = st.text_area("הקלד הערה", value=note)
 
-    # כפתור שמירה
+    # Save button
     if st.button("💾 שמור אילוצים"):
         blocked = []
         for idx, row in updated_df.iterrows():
             day = row["יום"]
             for shift in SHIFT_TIMES:
-                if shift in row and row[shift] == True:
+                if row[shift] == True:
                     blocked.append((day, shift))
 
         df_save = pd.DataFrame(blocked, columns=["day", "shift"])
