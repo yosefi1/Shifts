@@ -6,9 +6,8 @@ from utils.helpers import SHIFT_TIMES, DAYS
 CONSTRAINT_DIR = "constraints"
 
 # עדכון קבועים לשימוש פה בלבד
-DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת", "ראשון"]
 SHIFT_TIMES = ["08:00-12:00", "20:00-00:00"]
-
+DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת", "ראשון"]
 
 def show_constraints_tab(username):
     st.subheader("🚫 סימון אילוצים לשבוע הבא")
@@ -22,15 +21,14 @@ def show_constraints_tab(username):
     for i, day in enumerate(DAYS):
         row = {"יום": day}
         for shift in SHIFT_TIMES:
-            # הגדר ברירת מחדל: False
             row[shift] = False
         data.append(row)
 
     df = pd.DataFrame(data)
 
-    # ביטול סימון בראשון הראשון והאחרון
-    df.loc[df.index == 0, "08-12"] = None   # ראשון ראשון
-    df.loc[df.index == len(df)-1, "20-00"] = None  # ראשון אחרון
+    # ביטול אפשרות לסימון
+    df.loc[df.index == 0, "08:00-12:00"] = None   # ראשון ראשון
+    df.loc[df.index == len(df)-1, "20:00-00:00"] = None  # ראשון אחרון
 
     # Load existing constraints
     if os.path.exists(constraint_file):
@@ -59,9 +57,10 @@ def show_constraints_tab(username):
                 col,
                 editable=True,
                 cellEditor='agCheckboxCellEditor',
-                cellRenderer='(params.value === null) ? "" : params.value',
+                cellRenderer='(params.value === null) ? "" : (params.value ? "✔️" : "")',
                 width=140
             )
+
 
     grid_options = gb.build()
 
