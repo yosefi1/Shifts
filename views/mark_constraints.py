@@ -5,9 +5,9 @@ from utils.helpers import SHIFT_TIMES, DAYS
 
 CONSTRAINT_DIR = "constraints"
 
-# עדכון קבועים לשימוש פה בלבד
-SHIFT_TIMES = ["08:00-12:00", "20:00-00:00"]
+# --- החלפה ידנית של קבועים עבור קובץ זה
 DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת", "ראשון"]
+SHIFT_TIMES = ["08:00-12:00", "20:00-00:00"]
 
 
 def show_constraints_tab(username):
@@ -24,13 +24,12 @@ def show_constraints_tab(username):
         for shift in SHIFT_TIMES:
             row[shift] = False
         data.append(row)
-    
-    df = pd.DataFrame(data)
-    
-    # ביטול אפשרות סימון בראשון ראשון ובאחרון
-    df.loc[df.index == 0, "08:00-12:00"] = None
-    df.loc[df.index == len(df)-1, "20:00-00:00"] = None
 
+    df = pd.DataFrame(data)
+
+    # ביטול אפשרות סימון בראשון הראשון והאחרון
+    df.loc[0, "08:00-12:00"] = None  # ראשון ראשון בוקר
+    df.loc[len(df) - 1, "20:00-00:00"] = None  # ראשון שני לילה
 
     # Load existing constraints
     if os.path.exists(constraint_file):
@@ -38,13 +37,13 @@ def show_constraints_tab(username):
             df_marked = pd.read_csv(constraint_file)
             for _, row in df_marked.iterrows():
                 day, shift = row["day"], row["shift"]
-                # תא שאינו None ניתן לסימון
-                if shift in df.columns and not pd.isna(df.loc[df["יום"] == day, shift]).all():
-                    df.loc[df["יום"] == day, shift] = True
+                if shift in df.columns and day in df["יום"].values:
+                    if not pd.isna(df.loc[df["יום"] == day, shift]).all():
+                        df.loc[df["יום"] == day, shift] = True
         except Exception as e:
             st.error(f"שגיאה בטעינת אילוצים קודמים: {e}")
 
-    # Table editing
+    # Table editing with AGGrid
     from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 
     gb = GridOptionsBuilder.from_dataframe(df)
@@ -53,16 +52,16 @@ def show_constraints_tab(username):
 
     for col in df.columns:
         if col == "יום":
-            gb.configure_column(col, editable=True, cellEditor='agCheckboxCellEditor', width=140)
-
+            gb.configure_column(col, editable=False, pinned='left', width=150)
         else:
             gb.configure_column(
-            col,
-            editable=True,
-            cellEditor='agCheckboxCellEditor',
-            cellRenderer='(params.value === true || params.value === false) ? `<input type="checkbox" ${params.value ? "checked" : ""} disabled>` : ""',
-            width=140
-        )
+                col,
+                editable=True,
+                cellEditor='agCheckboxCellEditor',
+                # אם הערך None – הצג ריק. אחרת, תן ל־agCheckbox לטפל.
+                cellRenderer='(params.value === null) ? "" : undefined',
+                width=140
+            )
 
     grid_options = gb.build()
 
@@ -93,7 +92,7 @@ def show_constraints_tab(username):
 
     updated_df = grid_response['data']
 
-    # Note
+    # הערה למנהל
     st.markdown("### הערה למנהל (לא חובה):")
     note = ""
     if os.path.exists(note_file):
@@ -101,7 +100,7 @@ def show_constraints_tab(username):
             note = f.read()
     note_input = st.text_area("הקלד הערה", value=note)
 
-    # Save button
+    # כפתור שמירה
     if st.button("💾 שמור אילוצים"):
         blocked = []
         for idx, row in updated_df.iterrows():
