@@ -54,12 +54,18 @@ def show_constraints_tab(username):
             gb.configure_column(col, editable=False, pinned='left', width=150)
         else:
             gb.configure_column(
-                col,
-                editable=True,
-                cellEditor='agCheckboxCellEditor',
-                cellRenderer='(params.value === null) ? "" : undefined',
-                width=140
-            )
+            col,
+            editable=True,
+            cellEditor='agCheckboxCellEditor',
+            editableOnCellCondition='''function(params) {
+                if ((params.rowIndex === 0 && params.colDef.field === "08:00-12:00") ||
+                    (params.rowIndex === 7 && params.colDef.field === "20:00-00:00")) {
+                    return false;
+                }
+                return true;
+            }''',
+            width=140
+        )
 
     grid_options = gb.build()
 
