@@ -132,4 +132,6 @@ def show_constraints_tab(username):
             f.write(note_input)
 
         st.success("האילוצים נשמרו בהצלחה!")
+        st.write("📄 נשמר בנתיב:", constraint_file)
+        st.write("🔍 קיים קובץ?", os.path.exists(constraint_file))
 
