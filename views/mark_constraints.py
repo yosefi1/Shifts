@@ -44,40 +44,15 @@ def show_constraints_tab(username):
     gb.configure_default_column(resizable=True, wrapText=True, autoHeight=True)
     gb.configure_grid_options(domLayout='normal')
 
+    for row_index, row in df.iterrows():
     for col in df.columns:
         if col == "יום":
             gb.configure_column(col, editable=False, pinned='left', width=150)
-        elif col == "08:00-12:00":
-            gb.configure_column(
-                col,
-                editable=True,
-                cellEditor='agCheckboxCellEditor',
-                cellStyle='''
-                    function(params) {
-                        if (params.node.rowIndex === 0) {
-                            return { "backgroundColor": "#f0f0f0", "pointerEvents": "none" };
-                        }
-                        return {};
-                    }
-                ''',
-                width=140
-            )
-
-        elif col == "20:00-00:00":
-            gb.configure_column(
-                col,
-                editable=True,
-                cellEditor='agCheckboxCellEditor',
-                cellStyle='''
-                    function(params) {
-                        if (params.node.rowIndex === 7) {
-                            return { "backgroundColor": "#f0f0f0", "pointerEvents": "none" };
-                        }
-                        return {};
-                    }
-                ''',
-                width=140
-            )
+        elif (col == "08:00-12:00" and row_index == 0) or (col == "20:00-00:00" and row_index == 7):
+            gb.configure_column(col, editable=False, cellEditor='agCheckboxCellEditor', width=140)
+        else:
+            gb.configure_column(col, editable=True, cellEditor='agCheckboxCellEditor', width=140)
+    break  # נצא מהלולאה אחרי סיבוב אחד – כי configure_column מתבצע פעם אחת לכל עמודה
 
 
     grid_options = gb.build()
