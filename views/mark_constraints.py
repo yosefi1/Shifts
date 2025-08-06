@@ -51,30 +51,45 @@ def show_constraints_tab(username):
         if col == "יום":
             gb.configure_column(col, editable=False, pinned='left', width=150)
         elif col in SHIFT_TIMES:
-            # נבדוק האם העמודה כוללת תא חסום
-            is_column_with_disabled = any((row_idx, col) in DISABLED_CELLS for row_idx in range(len(DAYS)))
-            
             gb.configure_column(
                 col,
                 editable=True,
+                width=140,
                 cellEditor='agCheckboxCellEditor',
-                cellRendererJsCode=f"""
-                function(params) {{
-                    const disabledCells = [
-                        [0, "08:00-12:00"],
-                        [7, "20:00-00:00"]
-                    ];
-                    const isDisabled = disabledCells.some(
-                        ([row, shift]) => row === params.rowIndex && shift === params.colDef.field
-                    );
-                    if (isDisabled) {{
-                        return '';
-                    }}
-                    return params.value ? '✔️' : '';
-                }}
-                """,
-                width=140
+                cellEditorSelector={
+                    "function": """
+                    function(params) {
+                        const disabledCells = [
+                            [0, "08:00-12:00"],
+                            [7, "20:00-00:00"]
+                        ];
+                        const isDisabled = disabledCells.some(
+                            ([row, shift]) => row === params.rowIndex && shift === params.colDef.field
+                        );
+                        if (isDisabled) {
+                            return null;
+                        }
+                        return { component: 'agCheckboxCellEditor' };
+                    }
+                    """
+                },
+                cellRendererJsCode="""
+                    function(params) {
+                        const disabledCells = [
+                            [0, "08:00-12:00"],
+                            [7, "20:00-00:00"]
+                        ];
+                        const isDisabled = disabledCells.some(
+                            ([row, shift]) => row === params.rowIndex && shift === params.colDef.field
+                        );
+                        if (isDisabled) {
+                            return '';
+                        }
+                        return params.value ? '✔️' : '';
+                    }
+                """
             )
+
 
 
     grid_options = gb.build()
