@@ -2,15 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 from utils.helpers import SHIFT_TIMES, DAYS
-
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
-
-import shutil
-
-if os.path.exists("constraints"):
-    shutil.rmtree("constraints")
-    os.makedirs("constraints")
-    st.info("📁 התיקייה constraints אופסה ונוצרה מחדש.")
     
 CONSTRAINT_DIR = "constraints"
 
