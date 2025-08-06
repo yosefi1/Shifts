@@ -33,22 +33,22 @@ def show_constraints_tab(username):
     df = pd.DataFrame(data)
 
     # טעינת אילוצים קודמים רק לתאים שמופיעים בטבלה
-        if os.path.exists(constraint_file):
-            try:
-                df_marked = pd.read_csv(constraint_file)
-                for _, row in df_marked.iterrows():
-                    day, shift = row["day"], row["shift"]
-                    # נזהה את אינדקס השורה לפי היום
-                    row_index = df.index[df["יום"] == day].tolist()
-                    if not row_index:
-                        continue
-                    i = row_index[0]
-                    if (i, shift) in DISABLED_CELLS:
-                        continue  # לא לטעון תאים חסומים
-                    if shift in df.columns:
-                        df.loc[df["יום"] == day, shift] = True
-            except Exception as e:
-                st.error(f"שגיאה בטעינת אילוצים קודמים: {e}")
+    if os.path.exists(constraint_file):
+        try:
+            df_marked = pd.read_csv(constraint_file)
+            for _, row in df_marked.iterrows():
+                day, shift = row["day"], row["shift"]
+                # נזהה את אינדקס השורה לפי היום
+                row_index = df.index[df["יום"] == day].tolist()
+                if not row_index:
+                    continue
+                i = row_index[0]
+                if (i, shift) in DISABLED_CELLS:
+                    continue  # לא לטעון תאים חסומים
+                if shift in df.columns:
+                    df.loc[df["יום"] == day, shift] = True
+        except Exception as e:
+            st.error(f"שגיאה בטעינת אילוצים קודמים: {e}")
 
 
     # AGGrid builder
