@@ -52,23 +52,9 @@ def show_constraints_tab(username):
         elif col in SHIFT_TIMES:
             gb.configure_column(
                 col,
-                editable=True,  # Default to editable
+                editable=True,
                 width=140,
                 cellEditor='agCheckboxCellEditor',
-                cellEditorParams={
-                    "function": """
-                        function(params) {
-                            const disabledCells = [
-                                [0, '08:00-12:00'],
-                                [7, '20:00-00:00']
-                            ];
-                            const isDisabled = disabledCells.some(
-                                ([row, shift]) => row === params.rowIndex && shift === params.colDef.field
-                            );
-                            return { disabled: isDisabled };
-                        }
-                    """
-                },
                 cellRenderer="""
                     function(params) {
                         const disabledCells = [
@@ -81,7 +67,7 @@ def show_constraints_tab(username):
                         if (isDisabled) {
                             return '';
                         }
-                        return params.value ? '<input type="checkbox" checked disabled>' : '<input type="checkbox" disabled>';
+                        return params.value ? '✔️' : '';
                     }
                 """
             )
@@ -172,4 +158,3 @@ def show_constraints_tab(username):
         st.success("האילוצים נשמרו בהצלחה!")
         st.write("📄 נשמר בנתיב:", constraint_file)
         st.write("🔍 קיים קובץ?", os.path.exists(constraint_file))
-        
