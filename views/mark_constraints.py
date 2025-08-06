@@ -1,16 +1,17 @@
 import streamlit as st
 import pandas as pd
 import os
+from utils.helpers import SHIFT_TIMES, DAYS
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 
 CONSTRAINT_DIR = "constraints"
 
-# Constants
+# נחליף ידנית את הקבועים כאן לפי הדרישות
 DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת", "ראשון"]
 SHIFT_TIMES = ["08:00-12:00", "20:00-00:00"]
 DISABLED_CELLS = {
-    (0, "08:00-12:00"),  # First row, first shift
-    (7, "20:00-00:00")   # Last row, last shift
+    (0, "08:00-12:00"),   # ראשון ראשון בוקר
+    (7, "20:00-00:00")    # ראשון אחרון ערב
 }
 
 def show_constraints_tab(username):
@@ -20,7 +21,7 @@ def show_constraints_tab(username):
     constraint_file = os.path.join(CONSTRAINT_DIR, f"{username}_constraints.csv")
     note_file = os.path.join(CONSTRAINT_DIR, f"{username}_note.txt")
 
-    # Create the table
+    # יצירת הטבלה
     data = []
     for day in DAYS:
         row = {"יום": day}
@@ -30,7 +31,7 @@ def show_constraints_tab(username):
 
     df = pd.DataFrame(data)
 
-    # Load existing constraints
+    # טעינת אילוצים קיימים
     if os.path.exists(constraint_file):
         try:
             df_marked = pd.read_csv(constraint_file)
@@ -41,7 +42,7 @@ def show_constraints_tab(username):
         except Exception as e:
             st.error(f"שגיאה בטעינת אילוצים קודמים: {e}")
 
-    # Build AgGrid options
+    # בניית הגדרות AGGrid
     gb = GridOptionsBuilder.from_dataframe(df)
     gb.configure_default_column(resizable=True, wrapText=True, autoHeight=True)
     gb.configure_grid_options(domLayout='normal')
@@ -52,10 +53,24 @@ def show_constraints_tab(username):
         elif col in SHIFT_TIMES:
             gb.configure_column(
                 col,
-                editable=True,
+                editable=True,  # Default editable, overridden by editable function
                 width=140,
                 cellEditor='agCheckboxCellEditor',
-                cellRenderer="""
+                cellEditorSelector={
+                    "function": """
+                        function(params) {
+                            const disabledCells = [
+                                [0, '08:00-12:00'],
+                                [7, '20:00-00:00']
+                            ];
+                            const isDisabled = disabledCells.some(
+                                ([row, shift]) => row === params.rowIndex && shift === params.colDef.field
+                            );
+                            return isDisabled ? null : { component: 'agCheckboxCellEditor' };
+                        }
+                    """
+                },
+                cellRendererJsCode="""
                     function(params) {
                         const disabledCells = [
                             [0, '08:00-12:00'],
@@ -126,11 +141,11 @@ def show_constraints_tab(username):
 
     updated_df = grid_response['data']
 
-    # Ensure disabled cells are not marked
+    # ביטול הערכים בתאים שלא אמורים להיות ניתנים לסימון
     for row_idx, col in DISABLED_CELLS:
         updated_df.at[row_idx, col] = False
 
-    # Note for manager
+    # הערה למנהל
     st.markdown("### הערה למנהל (לא חובה):")
     note = ""
     if os.path.exists(note_file):
@@ -138,14 +153,14 @@ def show_constraints_tab(username):
             note = f.read()
     note_input = st.text_area("הקלד הערה", value=note)
 
-    # Save button
+    # כפתור שמירה
     if st.button("💾 שמור אילוצים"):
         blocked = []
         for idx, row in updated_df.iterrows():
             day = row["יום"]
             for shift in SHIFT_TIMES:
                 if (idx, shift) in DISABLED_CELLS:
-                    continue  # Skip disabled cells
+                    continue  # דלג על שדות חסומים
                 if row[shift] == True:
                     blocked.append((day, shift))
 
