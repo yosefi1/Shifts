@@ -55,13 +55,12 @@ def show_constraints_tab(username):
             gb.configure_column(col, editable=False, pinned='left', width=150)
         else:
             gb.configure_column(
-                col,
-                editable=True,
-                cellEditor='agCheckboxCellEditor',
-                # אם הערך None – הצג ריק. אחרת, תן ל־agCheckbox לטפל.
-                cellRenderer='(params.value === null) ? "" : undefined',
-                width=140
-            )
+            col,
+            editable=True,
+            cellEditor='agCheckboxCellEditor',
+            width=140
+        )
+
 
     grid_options = gb.build()
 
