@@ -7,11 +7,14 @@ from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 
 CONSTRAINT_DIR = "constraints"
 
+# ימים ומשמרות
 DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת", "ראשון"]
 SHIFT_TIMES = ["08:00-12:00", "20:00-00:00"]
+
+# תאים שצריכים להיות חסומים
 DISABLED_CELLS = {
-    (0, "08:00-12:00"),   # ראשון ראשון בוקר
-    (7, "20:00-00:00")    # ראשון שני (שבוע הבא) ערב
+    (0, "08:00-12:00"),
+    (7, "20:00-00:00")
 }
 
 def show_constraints_tab(username):
@@ -21,12 +24,15 @@ def show_constraints_tab(username):
     constraint_file = os.path.join(CONSTRAINT_DIR, f"{username}_constraints.csv")
     note_file = os.path.join(CONSTRAINT_DIR, f"{username}_note.txt")
 
-    # יצירת הטבלה
+    # בניית הטבלה הריקה
     data = []
-    for day in DAYS:
+    for i, day in enumerate(DAYS):
         row = {"יום": day}
         for shift in SHIFT_TIMES:
-            row[shift] = False
+            if (i, shift) in DISABLED_CELLS:
+                row[shift] = None  # תא חסום
+            else:
+                row[shift] = False
         data.append(row)
 
     df = pd.DataFrame(data)
@@ -37,12 +43,12 @@ def show_constraints_tab(username):
             df_marked = pd.read_csv(constraint_file)
             for _, row in df_marked.iterrows():
                 day, shift = row["day"], row["shift"]
-                if shift in df.columns and day in df["יום"].values:
-                    df.loc[df["יום"] == day, shift] = True
+                mask = (df["יום"] == day) & (df[shift].notna())
+                df.loc[mask, shift] = True
         except Exception as e:
             st.error(f"שגיאה בטעינת אילוצים קודמים: {e}")
 
-    # הגדרות AGGrid
+    # הגדרת AGGrid
     gb = GridOptionsBuilder.from_dataframe(df)
     gb.configure_default_column(resizable=True, wrapText=True, autoHeight=True)
     gb.configure_grid_options(domLayout='normal')
@@ -51,7 +57,13 @@ def show_constraints_tab(username):
         if col == "יום":
             gb.configure_column(col, editable=False, pinned='left', width=150)
         else:
-            gb.configure_column(col, editable=True, cellEditor='agCheckboxCellEditor', width=140)
+            gb.configure_column(
+                col,
+                editable=True,
+                cellEditor='agCheckboxCellEditor',
+                cellRenderer='(params.value === null) ? "" : undefined',
+                width=140
+            )
 
     grid_options = gb.build()
 
@@ -76,19 +88,11 @@ def show_constraints_tab(username):
             },
             ".ag-cell-focus": {
                 "border": "1px solid #007bff !important",
-            },
-            ".ag-cell-disabled": {
-                "background-color": "#f0f0f0 !important",
-                "pointer-events": "none !important"
             }
         }
     )
 
     updated_df = grid_response['data']
-
-    # ביטול ערכים בתאים חסומים
-    for row_idx, col in DISABLED_CELLS:
-        updated_df.at[row_idx, col] = False
 
     # הערה למנהל
     st.markdown("### הערה למנהל (לא חובה):")
@@ -104,9 +108,7 @@ def show_constraints_tab(username):
         for idx, row in updated_df.iterrows():
             day = row["יום"]
             for shift in SHIFT_TIMES:
-                if (idx, shift) in DISABLED_CELLS:
-                    continue
-                if row[shift] == True:
+                if shift in row and row[shift] is True:
                     blocked.append((day, shift))
 
         df_save = pd.DataFrame(blocked, columns=["day", "shift"])
@@ -116,29 +118,3 @@ def show_constraints_tab(username):
             f.write(note_input)
 
         st.success("האילוצים נשמרו בהצלחה!")
-
-    # 🪄 הוספת JS כדי להפוך את התאים ל"נעולים" גם ויזואלית
-    js = """
-    <script>
-    setTimeout(() => {
-      const grid = window.document.querySelectorAll('.ag-center-cols-container .ag-row');
-      if (!grid) return;
-
-      const disabledCells = [
-        {row: 0, col: 1},  // ראשון ראשון בוקר
-        {row: 7, col: 2}   // ראשון שני ערב
-      ];
-
-      disabledCells.forEach(cell => {
-        const row = grid[cell.row];
-        if (row) {
-          const cellEl = row.querySelectorAll('.ag-cell')[cell.col];
-          if (cellEl) {
-            cellEl.classList.add("ag-cell-disabled");
-          }
-        }
-      });
-    }, 100);
-    </script>
-    """
-    st.components.v1.html(js, height=0)
