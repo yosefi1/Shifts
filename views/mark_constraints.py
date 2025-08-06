@@ -3,7 +3,7 @@ import pandas as pd
 import os
 from utils.helpers import SHIFT_TIMES, DAYS
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
-    
+
 CONSTRAINT_DIR = "constraints"
 
 # נחליף ידנית את הקבועים כאן לפי הדרישות
@@ -13,6 +13,7 @@ DISABLED_CELLS = {
     (0, "08:00-12:00"),   # ראשון ראשון בוקר
     (7, "20:00-00:00")    # ראשון אחרון ערב
 }
+
 
 def show_constraints_tab(username):
     st.subheader("🚫 סימון אילוצים לשבוע הבא")
@@ -58,19 +59,19 @@ def show_constraints_tab(username):
                 cellEditor='agCheckboxCellEditor',
                 cellEditorSelector={
                     "function": """
-                    function(params) {
-                        const disabledCells = [
-                            [0, "08:00-12:00"],
-                            [7, "20:00-00:00"]
-                        ];
-                        const isDisabled = disabledCells.some(
-                            ([row, shift]) => row === params.rowIndex && shift === params.colDef.field
-                        );
-                        if (isDisabled) {
-                            return null;
+                        function(params) {
+                            const disabledCells = [
+                                [0, "08:00-12:00"],
+                                [7, "20:00-00:00"]
+                            ];
+                            const isDisabled = disabledCells.some(
+                                ([row, shift]) => row === params.rowIndex && shift === params.colDef.field
+                            );
+                            if (isDisabled) {
+                                return null;
+                            }
+                            return { component: 'agCheckboxCellEditor' };
                         }
-                        return { component: 'agCheckboxCellEditor' };
-                    }
                     """
                 },
                 cellRendererJsCode="""
@@ -89,8 +90,6 @@ def show_constraints_tab(username):
                     }
                 """
             )
-
-
 
     grid_options = gb.build()
 
@@ -153,4 +152,3 @@ def show_constraints_tab(username):
         st.success("האילוצים נשמרו בהצלחה!")
         st.write("📄 נשמר בנתיב:", constraint_file)
         st.write("🔍 קיים קובץ?", os.path.exists(constraint_file))
-
