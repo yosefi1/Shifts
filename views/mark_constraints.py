@@ -53,46 +53,26 @@ def show_constraints_tab(username):
             gb.configure_column(col, editable=False, pinned='left', width=150)
         elif col in SHIFT_TIMES:
             gb.configure_column(
-            col,
-            editable=True,
-            cellEditor='agCheckboxCellEditor',
-            cellRendererJsCode=f"""
-            function(params) {{
-                const disabledCells = [
-                    [0, "08:00-12:00"],
-                    [7, "20:00-00:00"]
-                ];
-                const isDisabled = disabledCells.some(
-                    ([row, shift]) => row === params.rowIndex && shift === params.colDef.field
-                );
-                if (isDisabled) {{
-                    return '';  // תא ריק במקום checkbox
+                col,
+                editable=True,
+                cellEditor='agCheckboxCellEditor',
+                cellRendererJsCode=f"""
+                function(params) {{
+                    const disabledCells = [
+                        [0, "08:00-12:00"],
+                        [7, "20:00-00:00"]
+                    ];
+                    const isDisabled = disabledCells.some(
+                        ([row, shift]) => row === params.rowIndex && shift === params.colDef.field
+                    );
+                    if (isDisabled) {{
+                        return '';
+                    }}
+                    return params.value ? '✔️' : '';
                 }}
-                return params.value ? '✔️' : '';  // הצג סימון וי פשוט
-            }}
-            """,
-            width=140
-        )
-        
-                        col,
-                        editable=True,
-                        cellEditor='agCheckboxCellEditor',
-                        cellRenderer="""function(params) {
-                            const disabledCells = [
-                                [0, "08:00-12:00"],
-                                [7, "20:00-00:00"]
-                            ];
-                            const isDisabled = disabledCells.some(
-                                ([row, shift]) => row === params.rowIndex && shift === params.colDef.field
-                            );
-                            if (isDisabled) {
-                                return '';  // לא להציג כלום
-                            }
-                            return `<input type="checkbox" ${params.value ? "checked" : ""} disabled>`;
-                        }""",
-                        width=140
-                    )
-
+                """,
+                width=140
+            )
 
     grid_options = gb.build()
 
@@ -125,7 +105,7 @@ def show_constraints_tab(username):
 
     # ביטול הערכים בתאים שלא אמורים להיות ניתנים לסימון
     for row_idx, col in DISABLED_CELLS:
-        updated_df.at[row_idx, col] = False  # וגם אם שונה – נבטל
+        updated_df.at[row_idx, col] = False
 
     # הערה למנהל
     st.markdown("### הערה למנהל (לא חובה):")
@@ -153,3 +133,4 @@ def show_constraints_tab(username):
             f.write(note_input)
 
         st.success("האילוצים נשמרו בהצלחה!")
+
