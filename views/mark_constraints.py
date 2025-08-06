@@ -53,7 +53,8 @@ def show_constraints_tab(username):
 
     for col in df.columns:
         if col == "יום":
-            gb.configure_column(col, editable=False, pinned='left', width=150)
+            gb.configure_column(col, editable=True, cellEditor='agCheckboxCellEditor', width=140)
+
         else:
             gb.configure_column(
             col,
@@ -62,9 +63,6 @@ def show_constraints_tab(username):
             cellRenderer='(params.value === true || params.value === false) ? `<input type="checkbox" ${params.value ? "checked" : ""} disabled>` : ""',
             width=140
         )
-
-
-
 
     grid_options = gb.build()
 
